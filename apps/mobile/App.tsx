@@ -1,31 +1,314 @@
-import React,{useState} from 'react';
-import {Dimensions,Modal,Pressable,SafeAreaView,ScrollView,StatusBar,StyleSheet,Text,View,ViewStyle} from 'react-native';
-import {LinearGradient} from 'expo-linear-gradient';
+import React, {Component, type ReactNode, useEffect, useMemo, useState} from 'react';
+import {
+  ActivityIndicator,
+  Image,
+  Linking,
+  Modal,
+  Pressable,
+  RefreshControl,
+  SafeAreaView,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 
-const {width}=Dimensions.get('window');
-const items=[
-{id:'1',title:'Son Işık',colors:['#101331','#ff365f'] as const,match:'%98',meta:'2026 · 24 dk · 13+',genres:'Bilim Kurgu · Dram · Gizem',desc:'Şehrin elektrikleri sonsuza dek kesildiğinde, genç bir görüntü yönetmeni insanlığın son gecesini kaydetmeye karar verir.'},
-{id:'2',title:'Yankı Odası',colors:['#111118','#7556ff'] as const,match:'%95',meta:'2025 · 18 dk · 16+',genres:'Gerilim · Psikolojik',desc:'Bir ses mühendisi, yıllar önce kaybettiği kardeşinin sesini terk edilmiş bir stüdyoda yeniden duyar.'},
-{id:'3',title:'Kırmızı Frekans',colors:['#21050c','#ff1f46'] as const,match:'%93',meta:'2026 · 31 dk · 16+',genres:'Korku · Gizem',desc:'Gece radyosunda duyulan tek bir frekans, dinleyen herkesin aynı rüyayı görmesine neden olur.'},
-{id:'4',title:'Mavi Saat',colors:['#07182c','#31a9d8'] as const,match:'%91',meta:'2024 · 22 dk · 7+',genres:'Romantik · Dram',desc:'Gün doğmadan önceki bir saat boyunca iki yabancının yolları, boş bir sahil kasabasında kesişir.'}
-];
+const CATALOG_URL =
+  'https://raw.githubusercontent.com/apexlions16/OdiumFlix/main/catalog/media/index.json';
 
-const FilmArt=({item,style}:{item:any;style:ViewStyle})=><LinearGradient colors={item.colors} start={{x:0,y:1}} end={{x:1,y:0}} style={[style,s.art]}>
-  <View style={s.glow}/><View style={s.beam}/><View style={s.artHorizon}/><Text style={s.artBrand}>ODIUMFLIX</Text>
-</LinearGradient>;
+type Asset = {
+  assetId: string;
+  title: string;
+  contentType: string;
+  durationSeconds?: number;
+  metadata?: {
+    title?: string;
+    overview?: string;
+    releaseDate?: string;
+    genres?: string[];
+    trailerUrl?: string | null;
+  } | null;
+  artwork?: {poster?: string; backdrop?: string};
+  playback?: {
+    mode?: 'hls' | 'direct';
+    master?: string | null;
+    directFile?: string | null;
+    qualities?: Array<{name: string}>;
+    audio?: Array<{name: string; codec?: string}>;
+    subtitles?: Array<{name: string; format?: string}>;
+  };
+  storage?: {baseUrl?: string};
+};
 
-export default function App(){
- const [selected,setSelected]=useState<any>(null);const [tab,setTab]=useState('Ana Sayfa');
- return <SafeAreaView style={s.root}><StatusBar barStyle="light-content"/>
-  <ScrollView bounces={false} contentContainerStyle={{paddingBottom:95}}>
-   <View style={s.top}><View style={s.logo}><Text style={s.mark}>O</Text><Text style={s.logoText}>ODIUMFLIX</Text></View><View style={s.topIcons}><Text style={s.searchIcon}>⌕</Text><View style={s.avatar}><Text style={s.avatarText}>KA</Text></View></View></View>
-   <View style={s.hero}><FilmArt item={items[0]} style={StyleSheet.absoluteFillObject}/><LinearGradient colors={['transparent','rgba(7,7,9,.3)','#070709']} style={StyleSheet.absoluteFill}/><View style={s.heroContent}><Text style={s.original}>ODIUMFLIX ORİJİNAL</Text><Text style={s.heroTitle}>Son Işık</Text><Text style={s.heroMeta}>%98 Eşleşme  •  2026  •  13+  •  4K</Text><View style={s.actions}><Pressable style={s.iconButton}><Text style={s.icon}>＋</Text><Text style={s.iconLabel}>Listem</Text></Pressable><Pressable style={s.play}><Text style={s.playText}>▶  Oynat</Text></Pressable><Pressable style={s.iconButton} onPress={()=>setSelected(items[0])}><Text style={s.icon}>ⓘ</Text><Text style={s.iconLabel}>Bilgi</Text></Pressable></View></View></View>
-   <Row title="İzlemeye Devam Et" items={items.slice(0,3)} onSelect={setSelected}/><Row title="OdiumFlix Orijinalleri" items={items} onSelect={setSelected}/><Row title="Festival Seçkisi" items={[...items].reverse()} onSelect={setSelected}/>
-  </ScrollView>
-  <View style={s.tabs}>{['⌂|Ana Sayfa','▣|Keşfet','＋|Listem','↓|İndirilenler'].map(t=>{const [ic,l]=t.split('|');return <Pressable key={l} onPress={()=>setTab(l)} style={s.tab}><Text style={[s.tabIcon,tab===l&&s.active]}>{ic}</Text><Text style={[s.tabText,tab===l&&s.active]}>{l}</Text></Pressable>})}</View>
-  <Modal visible={!!selected} transparent animationType="slide" onRequestClose={()=>setSelected(null)}><View style={s.modalWrap}><View style={s.sheet}><Pressable style={s.close} onPress={()=>setSelected(null)}><Text style={s.closeText}>×</Text></Pressable>{selected&&<><FilmArt item={selected} style={s.sheetImage}/><LinearGradient colors={['transparent','#15151b']} style={s.sheetGrad}/><View style={s.sheetBody}><Text style={s.sheetTitle}>{selected.title}</Text><Text style={s.green}>{selected.match} eşleşme</Text><Text style={s.sheetMeta}>{selected.meta}</Text><Text style={s.desc}>{selected.desc}</Text><Text style={s.genres}>{selected.genres}</Text><Pressable style={s.sheetPlay}><Text style={s.sheetPlayText}>▶  Oynat</Text></Pressable><View style={s.divider}/><Text style={s.option}>Ses ve Altyazılar     Türkçe 5.1 · English · +3</Text><Text style={s.option}>Video kalitesi          Otomatik (4K'ya kadar)</Text></View></>}</View></View></Modal>
- </SafeAreaView>
+type CatalogDocument = {assets?: Record<string, Asset>};
+type Item = {
+  id: string;
+  title: string;
+  description: string;
+  year?: number;
+  duration: string;
+  genres: string[];
+  poster?: string;
+  backdrop?: string;
+  trailer?: string | null;
+  qualities: string[];
+  audio: string[];
+  subtitles: string[];
+};
+
+const join = (base: string, ...parts: Array<string | undefined>) =>
+  [base.replace(/\/+$/, ''), ...parts.filter(Boolean).map(value => String(value).replace(/^\/+|\/+$/g, ''))].join('/');
+
+const assetUrl = (asset: Asset, relative?: string) =>
+  relative && asset.storage?.baseUrl
+    ? join(asset.storage.baseUrl, 'objects', asset.assetId.slice(0, 2), asset.assetId, relative)
+    : undefined;
+
+const toItem = (asset: Asset): Item => {
+  const date = asset.metadata?.releaseDate ? new Date(asset.metadata.releaseDate) : null;
+  return {
+    id: asset.assetId,
+    title: asset.metadata?.title || asset.title,
+    description: asset.metadata?.overview || 'Açıklama henüz eklenmedi.',
+    year: date && !Number.isNaN(date.getTime()) ? date.getUTCFullYear() : undefined,
+    duration: asset.durationSeconds ? `${Math.max(1, Math.round(asset.durationSeconds / 60))} dk` : 'Süre bilinmiyor',
+    genres: asset.metadata?.genres || [],
+    poster: assetUrl(asset, asset.artwork?.poster),
+    backdrop: assetUrl(asset, asset.artwork?.backdrop),
+    trailer: asset.metadata?.trailerUrl,
+    qualities: (asset.playback?.qualities || []).map(value => value.name),
+    audio: (asset.playback?.audio || []).map(value => `${value.name}${value.codec ? ` · ${value.codec}` : ''}`),
+    subtitles: (asset.playback?.subtitles || []).map(value => `${value.name}${value.format ? ` · ${value.format}` : ''}`),
+  };
+};
+
+class ErrorBoundary extends Component<{children: ReactNode}, {error?: string}> {
+  state: {error?: string} = {};
+  static getDerivedStateFromError(error: Error) {
+    return {error: error.message || 'Bilinmeyen uygulama hatası'};
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <SafeAreaView style={styles.root}>
+          <View style={styles.center}>
+            <Text style={styles.logo}>ODIUMFLIX</Text>
+            <Text style={styles.errorTitle}>Uygulama açılamadı</Text>
+            <Text style={styles.muted}>{this.state.error}</Text>
+          </View>
+        </SafeAreaView>
+      );
+    }
+    return this.props.children;
+  }
 }
-const Row=({title,items,onSelect}:{title:string;items:any[];onSelect:(x:any)=>void})=><View style={s.row}><Text style={s.rowTitle}>{title}</Text><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rowContent}>{items.map((it,i)=><Pressable key={`${it.id}-${i}`} onPress={()=>onSelect(it)} style={s.card}><FilmArt item={it} style={StyleSheet.absoluteFillObject}/><LinearGradient colors={['transparent','rgba(0,0,0,.78)']} style={StyleSheet.absoluteFill}/><Text style={s.cardTitle}>{it.title}</Text>{title.startsWith('İzlemeye')&&<View style={s.progress}><View style={[s.progressFill,{width:`${35+i*20}%` as any}]}/></View>}</Pressable>)}</ScrollView></View>;
 
-const s=StyleSheet.create({root:{flex:1,backgroundColor:'#070709'},top:{position:'absolute',zIndex:10,top:8,left:16,right:16,height:55,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},logo:{flexDirection:'row',alignItems:'center',gap:8},mark:{width:28,height:28,textAlign:'center',textAlignVertical:'center',backgroundColor:'#ff365f',borderRadius:8,color:'#fff',fontWeight:'900',fontSize:18},logoText:{color:'#fff',fontWeight:'900',letterSpacing:1.7},topIcons:{flexDirection:'row',alignItems:'center',gap:16},searchIcon:{color:'#fff',fontSize:25},avatar:{width:32,height:32,borderRadius:9,backgroundColor:'#763cc7',alignItems:'center',justifyContent:'center'},avatarText:{color:'#fff',fontWeight:'700'},art:{overflow:'hidden'},glow:{position:'absolute',width:260,height:260,borderRadius:130,right:-25,top:18,backgroundColor:'rgba(255,255,255,.13)'},beam:{position:'absolute',width:165,height:600,right:42,top:-70,backgroundColor:'rgba(255,255,255,.07)',transform:[{rotate:'24deg'}]},artHorizon:{position:'absolute',left:-80,right:-80,bottom:-95,height:220,borderRadius:110,backgroundColor:'rgba(2,2,4,.7)'},artBrand:{position:'absolute',left:18,top:18,color:'rgba(255,255,255,.72)',fontSize:9,fontWeight:'800',letterSpacing:2.4},hero:{height:560,justifyContent:'flex-end'},heroContent:{paddingHorizontal:20,paddingBottom:27,alignItems:'center'},original:{color:'#ff8aa2',letterSpacing:3,fontSize:10,fontWeight:'800'},heroTitle:{fontSize:51,color:'#fff',fontWeight:'800',letterSpacing:-2,marginVertical:8},heroMeta:{color:'#e2e2e8',fontSize:12},actions:{flexDirection:'row',alignItems:'center',gap:22,marginTop:20},play:{backgroundColor:'#fff',height:43,paddingHorizontal:24,borderRadius:10,justifyContent:'center'},playText:{fontWeight:'800',color:'#0a0a0d'},iconButton:{alignItems:'center',minWidth:45},icon:{color:'#fff',fontSize:25},iconLabel:{color:'#fff',fontSize:10,marginTop:2},row:{marginTop:23},rowTitle:{color:'#fff',fontSize:18,fontWeight:'800',marginBottom:10,paddingHorizontal:16},rowContent:{paddingHorizontal:16,gap:10},card:{width:width*.56,height:126,borderRadius:10,overflow:'hidden',backgroundColor:'#17171e'},cardTitle:{position:'absolute',left:10,bottom:10,color:'#fff',fontWeight:'700'},progress:{position:'absolute',bottom:0,left:12,right:12,height:3,backgroundColor:'rgba(255,255,255,.28)'},progressFill:{height:3,backgroundColor:'#ff365f'},tabs:{position:'absolute',left:0,right:0,bottom:0,height:79,backgroundColor:'rgba(10,10,14,.96)',borderTopWidth:1,borderTopColor:'rgba(255,255,255,.07)',flexDirection:'row',justifyContent:'space-around',paddingTop:10},tab:{alignItems:'center',width:'25%'},tabIcon:{color:'#737380',fontSize:22},tabText:{color:'#737380',fontSize:9,marginTop:3},active:{color:'#fff'},modalWrap:{flex:1,backgroundColor:'rgba(0,0,0,.65)',justifyContent:'flex-end'},sheet:{minHeight:'78%',backgroundColor:'#15151b',borderTopLeftRadius:22,borderTopRightRadius:22,overflow:'hidden'},close:{position:'absolute',right:15,top:12,zIndex:5,width:36,height:36,borderRadius:18,backgroundColor:'rgba(0,0,0,.65)',alignItems:'center',justifyContent:'center'},closeText:{fontSize:23,color:'#fff'},sheetImage:{width:'100%',height:285},sheetGrad:{height:130,position:'absolute',top:160,left:0,right:0},sheetBody:{padding:20,marginTop:-28},sheetTitle:{color:'#fff',fontSize:35,fontWeight:'800'},green:{color:'#4fd6a3',fontWeight:'700',marginTop:8},sheetMeta:{color:'#bdbdc6',marginTop:4},desc:{color:'#dfdfe5',lineHeight:22,marginTop:14},genres:{color:'#8e8e9c',marginTop:10},sheetPlay:{height:47,backgroundColor:'#fff',borderRadius:11,alignItems:'center',justifyContent:'center',marginTop:20},sheetPlayText:{color:'#08080a',fontWeight:'800'},divider:{height:1,backgroundColor:'rgba(255,255,255,.09)',marginVertical:20},option:{color:'#d7d7df',marginVertical:7,fontSize:12}});
+function OdiumFlixApp() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [selected, setSelected] = useState<Item | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = async (refresh = false) => {
+    refresh ? setRefreshing(true) : setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch(`${CATALOG_URL}?t=${Date.now()}`);
+      if (!response.ok) throw new Error(`Katalog alınamadı (${response.status})`);
+      const document = (await response.json()) as CatalogDocument;
+      const values = Object.values(document.assets || {}).map(toItem);
+      setItems(values);
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    load();
+  }, []);
+
+  const hero = items[0];
+  const sections = useMemo(() => {
+    if (!items.length) return [];
+    return [
+      {title: 'Yeni Eklenenler', data: items},
+      {title: 'Filmler ve Diziler', data: items.filter(item => item.id !== hero?.id)},
+    ].filter(section => section.data.length);
+  }, [items, hero?.id]);
+
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.root}>
+        <StatusBar barStyle="light-content" />
+        <View style={styles.center}>
+          <Text style={styles.logo}>ODIUMFLIX</Text>
+          <ActivityIndicator color="#ff365f" size="large" />
+          <Text style={styles.muted}>Katalog yükleniyor…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.root}>
+      <StatusBar barStyle="light-content" />
+      <ScrollView
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => load(true)} tintColor="#ff365f" />}
+        contentContainerStyle={styles.scroll}
+      >
+        <View style={styles.header}>
+          <View style={styles.brandMark}><Text style={styles.brandMarkText}>O</Text></View>
+          <Text style={styles.logo}>ODIUMFLIX</Text>
+        </View>
+
+        {error && (
+          <View style={styles.notice}>
+            <Text style={styles.noticeTitle}>Katalog bağlantısı kurulamadı</Text>
+            <Text style={styles.muted}>{error}</Text>
+            <Pressable style={styles.secondaryButton} onPress={() => load()}>
+              <Text style={styles.secondaryButtonText}>Tekrar dene</Text>
+            </Pressable>
+          </View>
+        )}
+
+        {!error && !items.length && (
+          <View style={styles.empty}>
+            <Text style={styles.emptyIcon}>＋</Text>
+            <Text style={styles.emptyTitle}>Henüz içerik yok</Text>
+            <Text style={styles.muted}>
+              OdiumFlix Studio’dan ilk filmi veya diziyi yüklediğinde burada otomatik görünecek.
+            </Text>
+          </View>
+        )}
+
+        {hero && (
+          <Pressable style={styles.hero} onPress={() => setSelected(hero)}>
+            {hero.backdrop ? <Image source={{uri: hero.backdrop}} style={StyleSheet.absoluteFillObject} resizeMode="cover" /> : null}
+            <View style={styles.heroShade} />
+            <View style={styles.heroBody}>
+              <Text style={styles.original}>ODIUMFLIX</Text>
+              <Text style={styles.heroTitle}>{hero.title}</Text>
+              <Text style={styles.heroMeta}>
+                {[hero.year, hero.duration, hero.qualities[0]].filter(Boolean).join(' · ')}
+              </Text>
+              <Text style={styles.heroDescription} numberOfLines={3}>{hero.description}</Text>
+              <View style={styles.heroActions}>
+                <Pressable style={styles.playButton} onPress={() => setSelected(hero)}>
+                  <Text style={styles.playText}>▶ Bilgiler</Text>
+                </Pressable>
+                {hero.trailer ? (
+                  <Pressable style={styles.trailerButton} onPress={() => Linking.openURL(hero.trailer!)}>
+                    <Text style={styles.trailerText}>Fragman</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            </View>
+          </Pressable>
+        )}
+
+        {sections.map(section => (
+          <View key={section.title} style={styles.section}>
+            <Text style={styles.sectionTitle}>{section.title}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
+              {section.data.map(item => (
+                <Pressable key={item.id} style={styles.card} onPress={() => setSelected(item)}>
+                  {item.poster || item.backdrop ? (
+                    <Image source={{uri: item.poster || item.backdrop}} style={StyleSheet.absoluteFillObject} resizeMode="cover" />
+                  ) : null}
+                  <View style={styles.cardShade} />
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.cardMeta}>{item.duration}</Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        ))}
+      </ScrollView>
+
+      <Modal visible={!!selected} transparent animationType="slide" onRequestClose={() => setSelected(null)}>
+        <View style={styles.modalBackdrop}>
+          <View style={styles.sheet}>
+            <Pressable style={styles.close} onPress={() => setSelected(null)}><Text style={styles.closeText}>×</Text></Pressable>
+            {selected?.backdrop ? <Image source={{uri: selected.backdrop}} style={styles.sheetImage} resizeMode="cover" /> : <View style={styles.sheetImage} />}
+            <View style={styles.sheetBody}>
+              <Text style={styles.sheetTitle}>{selected?.title}</Text>
+              <Text style={styles.sheetMeta}>
+                {[selected?.year, selected?.duration, ...(selected?.genres || [])].filter(Boolean).join(' · ')}
+              </Text>
+              <Text style={styles.description}>{selected?.description}</Text>
+              <Text style={styles.label}>Kaliteler</Text>
+              <Text style={styles.value}>{selected?.qualities.join(', ') || 'Belirtilmedi'}</Text>
+              <Text style={styles.label}>Sesler</Text>
+              <Text style={styles.value}>{selected?.audio.join(', ') || 'Sessiz içerik'}</Text>
+              <Text style={styles.label}>Altyazılar</Text>
+              <Text style={styles.value}>{selected?.subtitles.join(', ') || 'Altyazı yok'}</Text>
+              {selected?.trailer ? (
+                <Pressable style={styles.playButton} onPress={() => Linking.openURL(selected.trailer!)}>
+                  <Text style={styles.playText}>Fragmanı aç</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        </View>
+      </Modal>
+    </SafeAreaView>
+  );
+}
+
+export default function App() {
+  return <ErrorBoundary><OdiumFlixApp /></ErrorBoundary>;
+}
+
+const styles = StyleSheet.create({
+  root: {flex: 1, backgroundColor: '#070709'},
+  scroll: {paddingBottom: 48},
+  center: {flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 28},
+  header: {height: 64, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 18, gap: 10},
+  brandMark: {width: 30, height: 30, borderRadius: 9, backgroundColor: '#ff365f', alignItems: 'center', justifyContent: 'center'},
+  brandMarkText: {color: '#fff', fontWeight: '900', fontSize: 18},
+  logo: {color: '#fff', fontWeight: '900', letterSpacing: 2},
+  muted: {color: '#8f8f9b', textAlign: 'center', lineHeight: 20},
+  notice: {margin: 16, padding: 18, borderRadius: 16, backgroundColor: '#211017', borderWidth: 1, borderColor: '#ff365f44'},
+  noticeTitle: {color: '#fff', fontWeight: '800', fontSize: 17, marginBottom: 8},
+  secondaryButton: {alignSelf: 'center', marginTop: 14, borderWidth: 1, borderColor: '#ffffff22', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 10},
+  secondaryButtonText: {color: '#fff', fontWeight: '700'},
+  empty: {margin: 16, minHeight: 420, alignItems: 'center', justifyContent: 'center', padding: 30, borderRadius: 24, backgroundColor: '#111116', borderWidth: 1, borderColor: '#ffffff10'},
+  emptyIcon: {color: '#ff365f', fontSize: 52, fontWeight: '200'},
+  emptyTitle: {color: '#fff', fontSize: 24, fontWeight: '800', marginVertical: 10},
+  hero: {height: 520, marginHorizontal: 14, borderRadius: 22, overflow: 'hidden', backgroundColor: '#17171e', justifyContent: 'flex-end'},
+  heroShade: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,.38)'},
+  heroBody: {padding: 24},
+  original: {color: '#ff8aa2', fontWeight: '800', letterSpacing: 3, fontSize: 10},
+  heroTitle: {color: '#fff', fontSize: 46, fontWeight: '900', marginVertical: 8},
+  heroMeta: {color: '#e0e0e8', fontSize: 12},
+  heroDescription: {color: '#e2e2e8', lineHeight: 20, marginTop: 12},
+  heroActions: {flexDirection: 'row', gap: 10, marginTop: 18},
+  playButton: {backgroundColor: '#fff', paddingHorizontal: 20, height: 44, borderRadius: 11, alignItems: 'center', justifyContent: 'center'},
+  playText: {color: '#09090c', fontWeight: '900'},
+  trailerButton: {backgroundColor: '#ffffff22', paddingHorizontal: 20, height: 44, borderRadius: 11, alignItems: 'center', justifyContent: 'center'},
+  trailerText: {color: '#fff', fontWeight: '800'},
+  section: {marginTop: 26},
+  sectionTitle: {color: '#fff', fontSize: 19, fontWeight: '900', paddingHorizontal: 16, marginBottom: 11},
+  rail: {paddingHorizontal: 16, gap: 10},
+  card: {width: 245, height: 145, borderRadius: 14, overflow: 'hidden', backgroundColor: '#18181f', justifyContent: 'flex-end', padding: 13},
+  cardShade: {position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, backgroundColor: 'rgba(0,0,0,.35)'},
+  cardTitle: {color: '#fff', fontWeight: '900', fontSize: 17},
+  cardMeta: {color: '#c8c8d0', fontSize: 11, marginTop: 3},
+  modalBackdrop: {flex: 1, backgroundColor: 'rgba(0,0,0,.72)', justifyContent: 'flex-end'},
+  sheet: {maxHeight: '90%', backgroundColor: '#15151b', borderTopLeftRadius: 24, borderTopRightRadius: 24, overflow: 'hidden'},
+  close: {position: 'absolute', zIndex: 4, right: 14, top: 14, width: 38, height: 38, borderRadius: 19, backgroundColor: '#000b', alignItems: 'center', justifyContent: 'center'},
+  closeText: {color: '#fff', fontSize: 25},
+  sheetImage: {height: 280, width: '100%', backgroundColor: '#1c1c24'},
+  sheetBody: {padding: 20},
+  sheetTitle: {color: '#fff', fontSize: 34, fontWeight: '900'},
+  sheetMeta: {color: '#9f9faa', marginTop: 6},
+  description: {color: '#e3e3e9', lineHeight: 22, marginVertical: 16},
+  label: {color: '#ff7892', fontSize: 11, fontWeight: '800', marginTop: 10, textTransform: 'uppercase'},
+  value: {color: '#d2d2da', marginTop: 4, lineHeight: 19},
+  errorTitle: {color: '#fff', fontSize: 24, fontWeight: '900'},
+});

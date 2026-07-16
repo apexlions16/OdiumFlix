@@ -1,6 +1,6 @@
 {
   "name": "@odiumflix/studio-desktop",
-  "version": "0.2.0-alpha.1",
+  "version": "0.3.0-alpha.1",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
@@ -22,37 +22,13 @@
     "appId": "com.odiumstudio.odiumflix.studio",
     "productName": "OdiumFlix Studio",
     "asar": true,
-    "asarUnpack": [
-      "node_modules/ffmpeg-static/**/*",
-      "node_modules/ffprobe-static/**/*"
-    ],
-    "files": [
-      "dist/**/*",
-      "package.json",
-      "node_modules/**/*"
-    ],
-    "directories": {
-      "output": "release"
-    },
-    "win": {
-      "target": [
-        "nsis",
-        "portable"
-      ],
-      "artifactName": "OdiumFlix-Studio-${version}-${arch}.${ext}"
-    },
+    "asarUnpack": ["node_modules/ffmpeg-static/**/*", "node_modules/ffprobe-static/**/*"],
+    "files": ["dist/**/*", "package.json", "node_modules/**/*"],
+    "directories": {"output": "release"},
+    "win": {"target": ["nsis", "portable"], "artifactName": "OdiumFlix-Studio-${version}-${arch}.${ext}"},
     "extraResources": [
-      {
-        "from": "../studio/dist",
-        "to": "studio"
-      },
-      {
-        "from": "resources",
-        "to": "worker",
-        "filter": [
-          "**/*"
-        ]
-      }
+      {"from": "../studio/dist", "to": "studio"},
+      {"from": "resources", "to": "worker", "filter": ["**/*"]}
     ]
   }
 }
