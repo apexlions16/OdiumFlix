@@ -152,8 +152,44 @@ jobs:
           pattern: odiumflix-*-release
           path: release-assets
           merge-multiple: true
-      - name: Show release files
-        run: find release-assets -maxdepth 2 -type f -print || true
+      - name: Create release asset manifest
+        env:
+          WEB_RESULT: ${{ needs.web-packages.result }}
+          WINDOWS_RESULT: ${{ needs.windows-packages.result }}
+          ANDROID_RESULT: ${{ needs.android-packages.result }}
+        run: |
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path('release-assets')
+          files = [
+              {'name': p.name, 'sizeBytes': p.stat().st_size}
+              for p in sorted(root.glob('*')) if p.is_file()
+          ]
+          payload = {
+              'version': os.environ['RELEASE_VERSION'],
+              'tag': os.environ['RELEASE_TAG'],
+              'commit': os.environ['GITHUB_SHA'],
+              'jobs': {
+                  'web': os.environ.get('WEB_RESULT'),
+                  'windows': os.environ.get('WINDOWS_RESULT'),
+                  'android': os.environ.get('ANDROID_RESULT'),
+              },
+              'assets': files,
+          }
+          text = json.dumps(payload, ensure_ascii=False, indent=2) + '\n'
+          (root / f"OdiumFlix-{os.environ['RELEASE_VERSION']}-manifest.json").write_text(text, encoding='utf-8')
+          Path('releases').mkdir(exist_ok=True)
+          Path(f"releases/{os.environ['RELEASE_VERSION']}-assets.json").write_text(text, encoding='utf-8')
+          print(text)
+          PY
+      - name: Record release manifest in repository
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add releases/${RELEASE_VERSION}-assets.json
+          git commit -m "Record ${RELEASE_TAG} assets [skip ci]" || exit 0
+          git push origin HEAD:main
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
