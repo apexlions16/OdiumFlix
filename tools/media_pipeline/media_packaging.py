@@ -43,41 +43,79 @@ def write_single_file_playlist(path: Path, filename: str, duration: float) -> No
     )
 
 
+def _clean_hls_files(folder: Path) -> None:
+    for pattern in ("*.m3u8", "*.m4s", "*.mp4", "*.ts"):
+        for file in folder.glob(pattern):
+            file.unlink(missing_ok=True)
+
+
+def _normalize_playlist_paths(playlist: Path, folder: Path) -> None:
+    if not playlist.exists():
+        return
+    text = playlist.read_text(encoding="utf-8", errors="replace")
+    prefixes = {str(folder.resolve()).replace("\\", "/") + "/", str(folder).replace("\\", "/") + "/"}
+    normalized = text.replace("\\", "/")
+    for prefix in prefixes:
+        normalized = normalized.replace(prefix, "")
+    playlist.write_text(normalized, encoding="utf-8")
+
+
 def package_video_lossless(source: Path, folder: Path, label: str, probe: ProbeResult) -> dict[str, Any]:
     videos = [track for track in probe.tracks if track.kind == "video"]
     if not videos:
         raise PipelineError(f"Video parçası bulunamadı: {source}")
     track = videos[0]
     folder.mkdir(parents=True, exist_ok=True)
-    playlist = folder / "index.m3u8"
-    segment = folder / "stream.m4s"
-    command = [
+    playlist = folder / "video.m3u8"
+    fmp4_segment = folder / "video.m4s"
+    fmp4_command = [
         "ffmpeg", "-y", "-i", str(source), "-map", f"0:{track.index}", "-an", "-sn", "-dn",
         "-c:v", "copy", "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod",
         "-hls_segment_type", "fmp4", "-hls_flags", "single_file+independent_segments",
-        "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", str(segment), str(playlist),
+        "-hls_fmp4_init_filename", "video-init.mp4", "-hls_segment_filename", str(fmp4_segment), str(playlist),
     ]
-    ok, detail = run_soft(command)
+    ok, detail = run_soft(fmp4_command)
+    packaging = "hls-fmp4-stream-copy"
+
+    if not ok:
+        _clean_hls_files(folder)
+        ts_segment = folder / "video-%05d.ts"
+        ok, ts_detail = run_soft([
+            "ffmpeg", "-y", "-i", str(source), "-map", f"0:{track.index}", "-an", "-sn", "-dn",
+            "-c:v", "copy", "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod",
+            "-hls_flags", "independent_segments", "-hls_segment_filename", str(ts_segment), str(playlist),
+        ])
+        if ok:
+            packaging = "hls-mpegts-stream-copy"
+            detail = detail[-900:] + "\nFMP4 desteklenmedi; MPEG-TS HLS kullanıldı."
+        else:
+            detail = detail[-900:] + "\n" + ts_detail[-900:]
+
+    if ok:
+        _normalize_playlist_paths(playlist, folder)
+
     direct_file: Path | None = None
     if not ok:
+        _clean_hls_files(folder)
         direct_file = folder / "video-only.mkv"
         run(["ffmpeg", "-y", "-i", str(source), "-map", f"0:{track.index}", "-an", "-sn", "-dn", "-c:v", "copy", str(direct_file)])
+        packaging = "video-only-mkv-stream-copy"
+
     asset_root = folder.parent.parent
     return {
         "name": label, "declaredQuality": label,
         "actualWidth": track.width, "actualHeight": track.height,
         "codec": track.codec, "bitRate": track.bit_rate, "sourceName": source.name,
-        "packaging": "hls-fmp4-stream-copy" if ok else "video-only-mkv-stream-copy",
-        "losslessCopy": True,
+        "packaging": packaging, "losslessCopy": True,
         "playlist": playlist.relative_to(asset_root).as_posix() if ok else None,
         "file": direct_file.relative_to(asset_root).as_posix() if direct_file else None,
-        "packagingWarning": None if ok else detail[-2000:],
+        "packagingWarning": None if ok and packaging == "hls-fmp4-stream-copy" else detail[-2000:],
     }
 
 
 def copy_direct(source: Path, folder: Path, label: str, probe: ProbeResult) -> dict[str, Any]:
     folder.mkdir(parents=True, exist_ok=True)
-    destination = folder / f"media{source.suffix.lower() or '.mkv'}"
+    destination = folder / f"source{source.suffix.lower() or '.mkv'}"
     shutil.copy2(source, destination)
     video = next((track for track in probe.tracks if track.kind == "video"), None)
     asset_root = folder.parent.parent
@@ -101,7 +139,7 @@ def audio_extension(source_codec: str, selected_codec: str) -> str:
 def extract_audio_track(source: Path, track: Track, folder: Path, selected_codec: str, order: int) -> dict[str, Any]:
     folder.mkdir(parents=True, exist_ok=True)
     extension = audio_extension(track.codec, selected_codec)
-    output = folder / f"track{extension}"
+    output = folder / f"audio{extension}"
     codec_args = ["-c:a", "copy"] if selected_codec == "copy" else ["-c:a", AUDIO_ENCODERS[selected_codec]["encoder"]]
     if selected_codec == "aac":
         codec_args += ["-b:a", "384k" if (track.channels or 2) > 2 else "192k"]
@@ -110,23 +148,25 @@ def extract_audio_track(source: Path, track: Track, folder: Path, selected_codec
     except PipelineError:
         if selected_codec != "copy" or extension == ".mka":
             raise
-        output = folder / "track.mka"
+        output = folder / "audio.mka"
         run(["ffmpeg", "-y", "-i", str(source), "-map", f"0:{track.index}", "-vn", "-sn", "-c:a", "copy", str(output)])
 
     playlist: Path | None = None
     warning: str | None = None
     effective_codec = track.codec if selected_codec == "copy" else selected_codec
     if effective_codec in {"aac", "ac3", "eac3", "mp3"}:
-        playlist = folder / "index.m3u8"
-        segment = folder / "stream.m4s"
+        playlist = folder / "audio.m3u8"
+        segment = folder / "audio.m4s"
         ok, detail = run_soft([
             "ffmpeg", "-y", "-i", str(source), "-map", f"0:{track.index}", "-vn", "-sn", *codec_args,
             "-f", "hls", "-hls_time", "6", "-hls_playlist_type", "vod", "-hls_segment_type", "fmp4",
-            "-hls_flags", "single_file", "-hls_fmp4_init_filename", "init.mp4", "-hls_segment_filename", str(segment), str(playlist),
+            "-hls_flags", "single_file", "-hls_fmp4_init_filename", "audio-init.mp4", "-hls_segment_filename", str(segment), str(playlist),
         ])
         if not ok:
             playlist = None
             warning = detail[-1500:]
+        else:
+            _normalize_playlist_paths(playlist, folder)
 
     asset_root = folder.parent.parent
     return {
@@ -143,8 +183,8 @@ def extract_audio_track(source: Path, track: Track, folder: Path, selected_codec
 def add_subtitle(source: Path, track: Track, folder: Path, duration: float, order: int, *, external: bool, keep_original: bool) -> dict[str, Any]:
     folder.mkdir(parents=True, exist_ok=True)
     asset_root = folder.parent.parent
-    vtt = folder / "captions.vtt"
-    playlist = folder / "index.m3u8"
+    vtt = folder / "subtitles.vtt"
+    playlist = folder / "subtitles.m3u8"
     map_args = ["-map", "0:s:0"] if external else ["-map", f"0:{track.index}"]
     ok, detail = run_soft(["ffmpeg", "-y", "-i", str(source), *map_args, "-f", "webvtt", str(vtt)])
     if ok:
