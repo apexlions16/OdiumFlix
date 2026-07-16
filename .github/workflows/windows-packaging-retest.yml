@@ -4,7 +4,7 @@ on:
 permissions:
   contents: read
 jobs:
-  windows:
+  studio:
     runs-on: windows-latest
     timeout-minutes: 30
     steps:
@@ -12,32 +12,24 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Build web applications
+      - name: Build Studio web
         shell: pwsh
         run: |
-          npm install --prefix apps/web
-          npm run build --prefix apps/web
           npm install --prefix apps/studio
           npm run build --prefix apps/studio
-      - name: Package viewer with captured log
+      - name: Package Studio with captured log
         shell: pwsh
         run: |
-          npm install --prefix apps/desktop *>&1 | Tee-Object -FilePath viewer-package.log
-          if ($LASTEXITCODE -ne 0) { Get-Content viewer-package.log -Tail 120; exit $LASTEXITCODE }
-          npm run package --prefix apps/desktop *>&1 | Tee-Object -FilePath viewer-package.log -Append
+          npm install --prefix apps/studio-desktop *>&1 | Tee-Object -FilePath studio-package.log
+          if ($LASTEXITCODE -ne 0) { Get-Content studio-package.log -Tail 120; exit $LASTEXITCODE }
+          npm run package --prefix apps/studio-desktop *>&1 | Tee-Object -FilePath studio-package.log -Append
           $code = $LASTEXITCODE
-          Get-Content viewer-package.log -Tail 160
+          Get-Content studio-package.log -Tail 180
           exit $code
-      - name: Upload viewer package log
+      - name: Upload Studio package log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: viewer-package-log
-          path: viewer-package.log
+          name: studio-package-log
+          path: studio-package.log
           if-no-files-found: warn
-      - name: Package Studio
-        if: success()
-        shell: pwsh
-        run: |
-          npm install --prefix apps/studio-desktop
-          npm run package --prefix apps/studio-desktop
