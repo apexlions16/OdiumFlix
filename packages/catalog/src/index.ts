@@ -1,70 +1,150 @@
+export type CatalogTrack = {
+  id: string;
+  language?: string;
+  name: string;
+  codec?: string;
+  sourceCodec?: string;
+  channels?: number | null;
+  default?: boolean;
+  forced?: boolean;
+  playlist?: string;
+  file?: string;
+  originalFile?: string;
+  format?: string;
+};
+
+export type CatalogQuality = {
+  name: string;
+  width?: number | null;
+  height?: number | null;
+  bandwidth?: number;
+  codec?: string;
+  playlist?: string;
+  file?: string;
+};
+
+export type CatalogMetadata = {
+  provider?: string;
+  tmdbId?: number;
+  imdbId?: string;
+  type?: string;
+  title?: string;
+  originalTitle?: string;
+  overview?: string;
+  releaseDate?: string;
+  runtime?: number | null;
+  genres?: string[];
+  tagline?: string;
+  status?: string;
+  cast?: Array<{name?: string; character?: string; profilePath?: string}>;
+  crew?: Array<{name?: string; job?: string; department?: string}>;
+  trailerUrl?: string | null;
+};
+
+export type CatalogAsset = {
+  schemaVersion: number;
+  assetId: string;
+  title: string;
+  contentType: string;
+  durationSeconds?: number;
+  externalIds?: {imdb?: string | null; tmdb?: number | null};
+  episode?: {season?: number; number?: number} | null;
+  metadata?: CatalogMetadata | null;
+  artwork?: {poster?: string; backdrop?: string};
+  playback: {
+    mode: 'hls' | 'direct';
+    master?: string | null;
+    directFile?: string | null;
+    qualities: CatalogQuality[];
+    audio: CatalogTrack[];
+    subtitles: CatalogTrack[];
+  };
+  storage?: {
+    provider: 'huggingface';
+    repoId: string;
+    repoType: 'dataset' | 'model' | 'space';
+    revision?: string;
+    baseUrl: string;
+    private?: boolean;
+  };
+  createdAt?: number;
+};
+
+export type CatalogDocument = {
+  schemaVersion: number;
+  assets: Record<string, CatalogAsset>;
+};
+
 export type ContentItem = {
   id: string;
   title: string;
   eyebrow: string;
   description: string;
-  year: number;
+  year?: number;
   duration: string;
-  rating: string;
-  match: number;
   genres: string[];
-  poster: string;
-  backdrop: string;
-  progress?: number;
-  badge?: string;
-  audio: string[];
-  subtitles: string[];
-  qualities: string[];
+  poster?: string;
+  backdrop?: string;
+  trailerUrl?: string | null;
+  audio: CatalogTrack[];
+  subtitles: CatalogTrack[];
+  qualities: CatalogQuality[];
+  playbackUrl?: string;
+  playbackMode: 'hls' | 'direct';
+  source: CatalogAsset;
 };
 
-export const catalog: ContentItem[] = [
-  {
-    id: 'last-light', title: 'Son Işık', eyebrow: 'ODIUMFLIX ORİJİNAL',
-    description: 'Şehrin elektrikleri sonsuza dek kesildiğinde, genç bir görüntü yönetmeni elindeki son çalışan kamerayla insanlığın son gecesini kaydetmeye karar verir.',
-    year: 2026, duration: '24 dk', rating: '13+', match: 98,
-    genres: ['Bilim Kurgu', 'Dram', 'Gizem'], poster: 'art/last-light-poster.svg', backdrop: 'art/last-light-wide.svg',
-    progress: 42, badge: 'Yeni', audio: ['Türkçe 5.1', 'English 5.1', 'Türkçe Sesli Betimleme'], subtitles: ['Türkçe', 'English', 'Türkçe SDH'], qualities: ['4K', 'FHD+', '1080p', '720p', '480p']
-  },
-  {
-    id: 'echo-room', title: 'Yankı Odası', eyebrow: 'KISA FİLM',
-    description: 'Bir ses mühendisi, yıllar önce kaybettiği kardeşinin sesini terk edilmiş bir stüdyoda yeniden duyar.',
-    year: 2025, duration: '18 dk', rating: '16+', match: 95,
-    genres: ['Gerilim', 'Psikolojik'], poster: 'art/echo-room-poster.svg', backdrop: 'art/echo-room-wide.svg',
-    audio: ['Türkçe Stereo', 'English Stereo'], subtitles: ['Türkçe', 'English'], qualities: ['4K', '1080p', '720p', '480p']
-  },
-  {
-    id: 'red-frequency', title: 'Kırmızı Frekans', eyebrow: 'ODIUMFLIX ORİJİNAL',
-    description: 'Gece radyosunda duyulan tek bir frekans, dinleyen herkesin aynı rüyayı görmesine neden olur.',
-    year: 2026, duration: '31 dk', rating: '16+', match: 93,
-    genres: ['Korku', 'Gizem'], poster: 'art/red-frequency-poster.svg', backdrop: 'art/red-frequency-wide.svg',
-    badge: 'Çok Yakında', audio: ['Türkçe 5.1'], subtitles: ['Türkçe', 'English'], qualities: ['4K', '1080p']
-  },
-  {
-    id: 'blue-hour', title: 'Mavi Saat', eyebrow: 'FESTİVAL SEÇKİSİ',
-    description: 'Gün doğmadan önceki bir saat boyunca iki yabancının yolları, boş bir sahil kasabasında kesişir.',
-    year: 2024, duration: '22 dk', rating: '7+', match: 91,
-    genres: ['Romantik', 'Dram'], poster: 'art/blue-hour-poster.svg', backdrop: 'art/blue-hour-wide.svg',
-    audio: ['Türkçe Stereo'], subtitles: ['Türkçe', 'English', 'Deutsch'], qualities: ['1080p', '720p', '480p']
-  },
-  {
-    id: 'fracture', title: 'Kırılma', eyebrow: 'KISA FİLM',
-    description: 'Tek bir kararın beş farklı hayata yayılan sonuçları, parçalı bir anlatıyla birleşir.',
-    year: 2025, duration: '27 dk', rating: '13+', match: 89,
-    genres: ['Dram', 'Deneysel'], poster: 'art/fracture-poster.svg', backdrop: 'art/fracture-wide.svg',
-    progress: 76, audio: ['Türkçe 5.1'], subtitles: ['Türkçe', 'English'], qualities: ['4K', 'FHD+', '1080p', '720p']
-  },
-  {
-    id: 'after-rain', title: 'Yağmurdan Sonra', eyebrow: 'BELGESEL',
-    description: 'Bir kasabanın değişen iklimle mücadelesini, üç kuşağın gözünden anlatan kısa belgesel.',
-    year: 2023, duration: '35 dk', rating: 'Genel İzleyici', match: 87,
-    genres: ['Belgesel', 'Doğa'], poster: 'art/after-rain-poster.svg', backdrop: 'art/after-rain-wide.svg',
-    audio: ['Türkçe Stereo', 'English Stereo'], subtitles: ['Türkçe', 'English', 'Français'], qualities: ['1080p', '720p', '480p']
-  }
-];
+export const DEFAULT_CATALOG_URL =
+  'https://raw.githubusercontent.com/apexlions16/OdiumFlix/main/catalog/media/index.json';
 
-export const rows = [
-  { title: 'İzlemeye Devam Et', ids: ['last-light', 'fracture'] },
-  { title: 'OdiumFlix Orijinalleri', ids: ['last-light', 'red-frequency', 'echo-room', 'blue-hour'] },
-  { title: 'Festival Seçkisi', ids: ['blue-hour', 'after-rain', 'fracture', 'echo-room'] },
-  { title: 'Kısa ve Etkileyici', ids: ['echo-room', 'last-light', 'blue-hour', 'fracture', 'red-frequency'] }
-];
+const joinUrl = (base: string, ...parts: Array<string | null | undefined>) =>
+  [base.replace(/\/+$/, ''), ...parts.filter(Boolean).map(part => String(part).replace(/^\/+|\/+$/g, ''))].join('/');
+
+export const assetUrl = (asset: CatalogAsset, relative?: string | null): string | undefined => {
+  if (!relative || !asset.storage?.baseUrl) return undefined;
+  return joinUrl(asset.storage.baseUrl, 'objects', asset.assetId.slice(0, 2), asset.assetId, relative);
+};
+
+export const toContentItem = (asset: CatalogAsset): ContentItem => {
+  const metadata = asset.metadata || {};
+  const release = metadata.releaseDate ? new Date(metadata.releaseDate) : null;
+  const year = release && !Number.isNaN(release.getTime()) ? release.getUTCFullYear() : undefined;
+  const durationSeconds = asset.durationSeconds || ((metadata.runtime || 0) * 60);
+  const duration = durationSeconds
+    ? `${Math.max(1, Math.round(durationSeconds / 60))} dk`
+    : 'Süre bilinmiyor';
+  const playbackRelative = asset.playback.mode === 'hls'
+    ? asset.playback.master
+    : asset.playback.directFile;
+  return {
+    id: asset.assetId,
+    title: metadata.title || asset.title,
+    eyebrow: asset.contentType === 'episode' ? 'DİZİ BÖLÜMÜ' : 'ODIUMFLIX',
+    description: metadata.overview || 'Açıklama henüz eklenmedi.',
+    year,
+    duration,
+    genres: metadata.genres || [],
+    poster: assetUrl(asset, asset.artwork?.poster),
+    backdrop: assetUrl(asset, asset.artwork?.backdrop),
+    trailerUrl: metadata.trailerUrl,
+    audio: asset.playback.audio || [],
+    subtitles: asset.playback.subtitles || [],
+    qualities: asset.playback.qualities || [],
+    playbackUrl: assetUrl(asset, playbackRelative),
+    playbackMode: asset.playback.mode,
+    source: asset,
+  };
+};
+
+export async function loadCatalog(url = DEFAULT_CATALOG_URL): Promise<ContentItem[]> {
+  const response = await fetch(url, {cache: 'no-store'});
+  if (!response.ok) throw new Error(`Katalog alınamadı (${response.status})`);
+  const document = await response.json() as CatalogDocument;
+  if (!document || typeof document.assets !== 'object') return [];
+  return Object.values(document.assets)
+    .map(toContentItem)
+    .sort((a, b) => (b.source.createdAt || 0) - (a.source.createdAt || 0));
+}
+
+export const catalog: ContentItem[] = [];
+export const rows: Array<{title: string; ids: string[]}> = [];

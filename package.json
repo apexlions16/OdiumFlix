@@ -1,6 +1,6 @@
 {
   "name": "odiumflix",
-  "version": "0.2.0-alpha.1",
+  "version": "0.3.0-alpha.1",
   "private": true,
   "workspaces": [
     "apps/*",
@@ -17,6 +17,6 @@
     "typecheck": "npm run typecheck -w @odiumflix/web && npm run typecheck -w @odiumflix/studio && npm run typecheck -w @odiumflix/mobile && npm run typecheck -w @odiumflix/studio-mobile"
   },
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   }
 }

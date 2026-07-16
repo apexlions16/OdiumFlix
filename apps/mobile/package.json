@@ -1,6 +1,6 @@
 {
   "name": "@odiumflix/mobile",
-  "version": "0.1.0",
+  "version": "0.3.0-alpha.1",
   "private": true,
   "main": "node_modules/expo/AppEntry.js",
   "scripts": {
@@ -12,9 +12,7 @@
   },
   "dependencies": {
     "expo": "57.0.6",
-    "expo-linear-gradient": "57.0.1",
-    "expo-status-bar": "57.0.1",
-    "react": "19.2.7",
+    "react": "19.2.3",
     "react-native": "0.86.0"
   },
   "devDependencies": {
