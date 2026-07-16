@@ -1,0 +1,13 @@
+{
+  "version": "0.3.0-alpha.1",
+  "channel": "alpha",
+  "requestedAt": "2026-07-16",
+  "validated": {
+    "web": true,
+    "windows": true,
+    "androidViewerRelease": true,
+    "androidStudioRelease": true,
+    "mediaWorker": true,
+    "mediaServer": true
+  }
+}
