@@ -1,21 +1,28 @@
 {
+  "schemaVersion": 2,
   "items": [
     {
-      "source": "D:/OdiumFlix/Son-Isik.mkv",
-      "title": "Son Işık",
+      "source": "D:/OdiumFlix/Film.2160p.mkv",
+      "title": "Film Başlığı",
       "content_type": "movie",
       "source_quality": "2160p",
-      "target_qualities": ["2160p", "1080p+", "1080p", "720p", "480p"],
-      "imdb_id": "tt0000000"
-    },
-    {
-      "source": "D:/OdiumFlix/Dizi/S01E01.mkv",
-      "title": "Bölüm 1",
-      "content_type": "episode",
-      "source_quality": "1080p",
-      "target_qualities": ["1080p", "720p", "480p"],
-      "season": 1,
-      "episode": 1
+      "target_qualities": ["2160p", "1080p", "720p", "480p"],
+      "processing_mode": "split",
+      "video_codec": "auto",
+      "audio_codec": "aac",
+      "keep_original": false,
+      "imdb_url": "https://www.imdb.com/title/tt0000000/",
+      "external_audio": [
+        "D:/OdiumFlix/audio/Film.tr.flac"
+      ],
+      "external_subtitles": [
+        "D:/OdiumFlix/subtitles/Film.tr.srt",
+        "D:/OdiumFlix/subtitles/Film.en.ass"
+      ],
+      "prepared_variants": {
+        "2160p": "D:/OdiumFlix/Film.2160p.mkv",
+        "1080p": "D:/OdiumFlix/Film.1080p.mkv"
+      }
     }
   ]
 }
