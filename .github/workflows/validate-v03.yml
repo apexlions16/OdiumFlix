@@ -26,7 +26,7 @@ jobs:
         run: |
           set -o pipefail
           {
-            python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/odium_media_payload_*.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
+            python -m py_compile tools/media_pipeline/media_common.py tools/media_pipeline/media_metadata.py tools/media_pipeline/media_packaging.py tools/media_pipeline/media_process.py tools/media_pipeline/media_remote.py tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
             PYTHONPATH=tools/media_pipeline python tools/media_pipeline/selftest_lossless.py
             python tools/media_pipeline/odium_media.py diagnostics
           } 2>&1 | tee lossless-validation.log
@@ -104,7 +104,7 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install -r tools/media_pipeline/requirements.txt pyinstaller
-          python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
+          python -m py_compile tools/media_pipeline/media_common.py tools/media_pipeline/media_metadata.py tools/media_pipeline/media_packaging.py tools/media_pipeline/media_process.py tools/media_pipeline/media_remote.py tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
           pyinstaller --noconfirm --clean --onefile --name odium-media --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet tools/media_pipeline/odium_media.py
           pyinstaller --noconfirm --clean --onefile --name OdiumFlix-Media-Server --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet --collect-submodules fastapi --collect-submodules uvicorn tools/media_pipeline/server.py
           New-Item -ItemType Directory -Force apps/studio-desktop/resources | Out-Null
