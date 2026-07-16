@@ -1,0 +1,21 @@
+{
+  "items": [
+    {
+      "source": "D:/OdiumFlix/Son-Isik.mkv",
+      "title": "Son Işık",
+      "content_type": "movie",
+      "source_quality": "2160p",
+      "target_qualities": ["2160p", "1080p+", "1080p", "720p", "480p"],
+      "imdb_id": "tt0000000"
+    },
+    {
+      "source": "D:/OdiumFlix/Dizi/S01E01.mkv",
+      "title": "Bölüm 1",
+      "content_type": "episode",
+      "source_quality": "1080p",
+      "target_qualities": ["1080p", "720p", "480p"],
+      "season": 1,
+      "episode": 1
+    }
+  ]
+}

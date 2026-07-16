@@ -1,15 +1,22 @@
 {
   "name": "odiumflix",
-  "version": "0.1.0",
+  "version": "0.2.0-alpha.1",
   "private": true,
-  "workspaces": ["apps/*", "packages/*"],
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
     "dev:web": "npm run dev -w @odiumflix/web",
     "dev:studio": "npm run dev -w @odiumflix/studio",
     "dev:mobile": "npm run start -w @odiumflix/mobile",
+    "dev:studio-mobile": "npm run start -w @odiumflix/studio-mobile",
     "dev:desktop": "npm run dev -w @odiumflix/desktop",
-    "build": "npm run build -w @odiumflix/web && npm run build -w @odiumflix/studio && npm run build -w @odiumflix/desktop",
-    "typecheck": "npm run typecheck -w @odiumflix/web && npm run typecheck -w @odiumflix/studio && npm run typecheck -w @odiumflix/mobile"
+    "dev:studio-desktop": "npm run dev -w @odiumflix/studio-desktop",
+    "build": "npm run build -w @odiumflix/web && npm run build -w @odiumflix/studio && npm run build -w @odiumflix/desktop && npm run build -w @odiumflix/studio-desktop",
+    "typecheck": "npm run typecheck -w @odiumflix/web && npm run typecheck -w @odiumflix/studio && npm run typecheck -w @odiumflix/mobile && npm run typecheck -w @odiumflix/studio-mobile"
   },
-  "engines": {"node": ">=20"}
+  "engines": {
+    "node": ">=20"
+  }
 }
