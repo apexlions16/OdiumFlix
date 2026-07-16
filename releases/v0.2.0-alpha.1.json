@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0-alpha.1",
+  "channel": "alpha",
+  "requestedAt": "2026-07-16",
+  "packages": [
+    "web",
+    "studio-web",
+    "windows",
+    "windows-studio",
+    "media-worker",
+    "media-server",
+    "android",
+    "android-studio"
+  ]
+}
