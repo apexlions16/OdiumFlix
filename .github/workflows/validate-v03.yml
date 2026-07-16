@@ -3,6 +3,10 @@ name: Validate OdiumFlix v0.3
 on:
   pull_request:
 
+concurrency:
+  group: validate-v03-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
