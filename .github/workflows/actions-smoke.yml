@@ -1,0 +1,11 @@
+name: Actions Smoke Test
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "OdiumFlix Actions çalışıyor"
