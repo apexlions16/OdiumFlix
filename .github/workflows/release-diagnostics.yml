@@ -1,0 +1,92 @@
+name: Release Diagnostics
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm install --prefix apps/web
+      - run: npm run build --prefix apps/web
+      - run: npm install --prefix apps/studio
+      - run: npm run build --prefix apps/studio
+
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Build web dependencies
+        shell: pwsh
+        run: |
+          npm install --prefix apps/web
+          npm run build --prefix apps/web
+          npm install --prefix apps/studio
+          npm run build --prefix apps/studio
+      - name: Build media executables
+        shell: pwsh
+        run: |
+          python -m pip install -r tools/media_pipeline/requirements.txt pyinstaller
+          pyinstaller --noconfirm --clean --onefile --name odium-media --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet tools/media_pipeline/odium_media.py
+          pyinstaller --noconfirm --clean --onefile --name OdiumFlix-Media-Server --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet --collect-submodules fastapi --collect-submodules uvicorn tools/media_pipeline/server.py
+          New-Item -ItemType Directory -Force apps/studio-desktop/resources | Out-Null
+          Copy-Item dist/odium-media.exe apps/studio-desktop/resources/odium-media.exe
+          Copy-Item dist/OdiumFlix-Media-Server.exe apps/studio-desktop/resources/OdiumFlix-Media-Server.exe
+      - name: Package viewer desktop
+        shell: pwsh
+        run: |
+          npm install --prefix apps/desktop
+          npm run package --prefix apps/desktop
+      - name: Package Windows Studio
+        shell: pwsh
+        run: |
+          npm install --prefix apps/studio-desktop
+          npm run package --prefix apps/studio-desktop
+
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Build viewer APK
+        env:
+          CI: '1'
+        run: |
+          npm install --prefix apps/mobile
+          cd apps/mobile
+          npx expo prebuild --platform android --no-install
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon
+      - name: Build Studio APK
+        env:
+          CI: '1'
+        run: |
+          npm install --prefix apps/studio-mobile
+          cd apps/studio-mobile
+          npx expo prebuild --platform android --no-install
+          chmod +x android/gradlew
+          cd android
+          ./gradlew assembleDebug --no-daemon
