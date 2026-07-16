@@ -1,0 +1,37 @@
+{
+  "name": "@odiumflix/studio-desktop",
+  "version": "0.2.0-alpha.1",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "tsc && electron .",
+    "build": "tsc",
+    "package": "tsc && electron-builder --win nsis portable"
+  },
+  "dependencies": {
+    "electron": "43.1.1",
+    "ffmpeg-static": "latest",
+    "ffprobe-static": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "electron-builder": "26.15.3",
+    "typescript": "7.0.2"
+  },
+  "build": {
+    "appId": "com.odiumstudio.odiumflix.studio",
+    "productName": "OdiumFlix Studio",
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**/*",
+      "node_modules/ffprobe-static/**/*"
+    ],
+    "files": ["dist/**/*", "package.json", "node_modules/**/*"],
+    "directories": {"output": "release"},
+    "win": {"target": ["nsis", "portable"], "artifactName": "OdiumFlix-Studio-${version}-${arch}.${ext}"},
+    "extraResources": [
+      {"from": "../studio/dist", "to": "studio"},
+      {"from": "resources", "to": "worker", "filter": ["**/*"]}
+    ]
+  }
+}
