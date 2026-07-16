@@ -1,0 +1,31 @@
+name: Windows Packaging Retest
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Build web applications
+        shell: pwsh
+        run: |
+          npm install --prefix apps/web
+          npm run build --prefix apps/web
+          npm install --prefix apps/studio
+          npm run build --prefix apps/studio
+      - name: Package viewer
+        shell: pwsh
+        run: |
+          npm install --prefix apps/desktop
+          npm run package --prefix apps/desktop
+      - name: Package Studio
+        shell: pwsh
+        run: |
+          npm install --prefix apps/studio-desktop
+          npm run package --prefix apps/studio-desktop
