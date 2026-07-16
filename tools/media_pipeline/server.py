@@ -13,7 +13,7 @@ from fastapi import BackgroundTasks, FastAPI, File, Form, HTTPException, UploadF
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from odium_media import BatchItem, process_item, update_github_catalog, upload_huggingface
+from odium_media import BatchItem, QUALITY_PROFILES, process_item, update_github_catalog, upload_huggingface
 
 app = FastAPI(title="OdiumFlix Media Worker", version="0.2.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=False, allow_methods=["*"], allow_headers=["*"])
@@ -57,8 +57,7 @@ async def create_batch(background: BackgroundTasks, plan: str = Form(...), files
     job_id = uuid.uuid4().hex
     incoming = ROOT / "incoming" / job_id
     for index, upload in enumerate(files):
-        safe_name = f"{index:04d}-{Path(upload.filename or 'media.bin').name}"
-        destination = incoming / safe_name
+        destination = incoming / f"{index:04d}-{Path(upload.filename or 'media.bin').name}"
         await save_upload(upload, destination)
         items[index]["source"] = str(destination)
     (incoming / "plan.json").write_text(json.dumps({"items": items}, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -66,8 +65,34 @@ async def create_batch(background: BackgroundTasks, plan: str = Form(...), files
     background.add_task(run_job, job_id, items)
     return JOBS[job_id]
 
+def merge_prepared_items(values: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    grouped: dict[str, dict[str, Any]] = {}
+    singles: list[dict[str, Any]] = []
+    for original in values:
+        value = dict(original)
+        key = value.pop("group_key", None)
+        if not key:
+            singles.append(value)
+            continue
+        quality = value.get("source_quality") or "1080p"
+        source = value["source"]
+        current = grouped.get(key)
+        if current is None:
+            value["prepared_variants"] = {quality: source}
+            grouped[key] = value
+            continue
+        current.setdefault("prepared_variants", {})[quality] = source
+        current["target_qualities"] = list(dict.fromkeys([*(current.get("target_qualities") or []), *(value.get("target_qualities") or [])]))
+        current_height = QUALITY_PROFILES.get(current.get("source_quality") or "", {}).get("height", 0)
+        new_height = QUALITY_PROFILES.get(quality, {}).get("height", 0)
+        if new_height > current_height:
+            current["source"] = source
+            current["source_quality"] = quality
+    return [*singles, *grouped.values()]
+
 def run_job(job_id: str, values: list[dict[str, Any]]) -> None:
     output = ROOT / "processed" / job_id
+    values = merge_prepared_items(values)
     try:
         JOBS[job_id].update(status="processing", progress=5, message="Medya analizi başladı")
         manifests = []
