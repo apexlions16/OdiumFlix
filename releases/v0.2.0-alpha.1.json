@@ -2,7 +2,17 @@
   "version": "0.2.0-alpha.1",
   "channel": "alpha",
   "requestedAt": "2026-07-16",
-  "verificationRun": 2,
+  "verificationRun": 3,
+  "verified": {
+    "web": true,
+    "studioWeb": true,
+    "windowsViewer": true,
+    "windowsStudio": true,
+    "mediaWorker": true,
+    "mediaServer": true,
+    "androidViewer": true,
+    "androidStudio": true
+  },
   "packages": [
     "web",
     "studio-web",
