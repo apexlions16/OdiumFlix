@@ -1,0 +1,24 @@
+name: Observe OdiumFlix v0.3 Release
+
+on:
+  pull_request:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read release run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: e1cb2fab6b0e1f417c2f0b8e628fac9a14320535
+        run: |
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${TARGET_SHA}&per_page=20" > v03-release-runs.json
+          jq '{total_count, workflow_runs: [.workflow_runs[] | {id,name,event,status,conclusion,html_url,run_number,created_at,updated_at}]}' v03-release-runs.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v03-release-runs-json
+          path: v03-release-runs.json
