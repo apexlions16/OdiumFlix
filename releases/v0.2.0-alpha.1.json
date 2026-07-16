@@ -2,6 +2,7 @@
   "version": "0.2.0-alpha.1",
   "channel": "alpha",
   "requestedAt": "2026-07-16",
+  "verificationRun": 2,
   "packages": [
     "web",
     "studio-web",
