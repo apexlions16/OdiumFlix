@@ -2,17 +2,17 @@
   "expo": {
     "name": "OdiumFlix Studio",
     "slug": "odiumflix-studio",
-    "version": "0.3.0-alpha.2",
+    "version": "0.3.0-alpha.3",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "android": {
       "package": "com.odiumstudio.odiumflix.studio",
-      "versionCode": 4,
+      "versionCode": 5,
       "adaptiveIcon": {"backgroundColor": "#08080c"}
     },
     "ios": {
       "bundleIdentifier": "com.odiumstudio.odiumflix.studio",
-      "buildNumber": "4"
+      "buildNumber": "5"
     },
     "plugins": []
   }

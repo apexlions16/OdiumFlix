@@ -1,4 +1,4 @@
-name: Release OdiumFlix v0.3 Alpha
+name: Release OdiumFlix v0.3 Alpha 3
 
 on:
   push:
@@ -8,15 +8,19 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-odiumflix-alpha3
+  cancel-in-progress: false
+
 env:
-  RELEASE_VERSION: 0.3.0-alpha.2
-  RELEASE_TAG: v0.3.0-alpha.2
+  RELEASE_VERSION: 0.3.0-alpha.3
+  RELEASE_TAG: v0.3.0-alpha.3
 
 jobs:
   web-packages:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -44,7 +48,7 @@ jobs:
   windows-packages:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     runs-on: windows-latest
-    timeout-minutes: 85
+    timeout-minutes: 95
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,7 +69,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r tools/media_pipeline/requirements.txt pyinstaller
-          python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
+          python -m py_compile tools/media_pipeline/media_common.py tools/media_pipeline/media_metadata.py tools/media_pipeline/media_packaging.py tools/media_pipeline/media_process.py tools/media_pipeline/media_remote.py tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
           pyinstaller --noconfirm --clean --onefile --name odium-media --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet tools/media_pipeline/odium_media.py
           pyinstaller --noconfirm --clean --onefile --name OdiumFlix-Media-Server --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet --collect-submodules fastapi --collect-submodules uvicorn tools/media_pipeline/server.py
           New-Item -ItemType Directory -Force apps/studio-desktop/resources | Out-Null
@@ -83,12 +87,14 @@ jobs:
           $env:ODIUM_FFMPEG=(Resolve-Path apps/studio-desktop/node_modules/ffmpeg-static/ffmpeg.exe).Path
           $env:ODIUM_FFPROBE=(Resolve-Path apps/studio-desktop/node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe).Path
           & dist/odium-media.exe diagnostics
+          if ($LASTEXITCODE -ne 0) { throw "Packaged media worker diagnostics failed: $LASTEXITCODE" }
           npm run package --prefix apps/studio-desktop
           $packagedProbe='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffprobe.exe'
           $packagedFfmpeg='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffmpeg.exe'
           if (-not (Test-Path $packagedProbe)) { throw "Packaged ffprobe missing: $packagedProbe" }
           if (-not (Test-Path $packagedFfmpeg)) { throw "Packaged ffmpeg missing: $packagedFfmpeg" }
           & $packagedProbe -version
+          if ($LASTEXITCODE -ne 0) { throw "Packaged ffprobe execution failed: $LASTEXITCODE" }
       - name: Collect Windows packages
         shell: pwsh
         run: |
@@ -106,7 +112,7 @@ jobs:
   android-packages:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     runs-on: ubuntu-latest
-    timeout-minutes: 75
+    timeout-minutes: 85
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -149,10 +155,10 @@ jobs:
           if-no-files-found: error
 
   publish-release:
-    if: always() && (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]'))
+    if: (github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')) && needs.web-packages.result == 'success' && needs.windows-packages.result == 'success' && needs.android-packages.result == 'success'
     needs: [web-packages, windows-packages, android-packages]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -196,6 +202,6 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: OdiumFlix ${{ env.RELEASE_TAG }}
           prerelease: true
-          body_path: docs/release-v0.3-alpha.2.md
+          body_path: docs/release-v0.3-alpha.3.md
           fail_on_unmatched_files: true
           files: release-assets/*

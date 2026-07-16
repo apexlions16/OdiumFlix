@@ -34,7 +34,7 @@ def variant_sources(item: BatchItem, source: Path, source_probe: ProbeResult) ->
 
 
 def write_master_manifest(asset_dir: Path, manifest: dict[str, Any]) -> str | None:
-    qualities = [q for q in manifest["playback"]["qualities"] if q.get("playlist")]
+    qualities = [quality for quality in manifest["playback"]["qualities"] if quality.get("playlist")]
     if not qualities:
         return None
     lines = ["#EXTM3U", "#EXT-X-VERSION:7", "#EXT-X-INDEPENDENT-SEGMENTS"]
@@ -58,12 +58,14 @@ def write_master_manifest(asset_dir: Path, manifest: dict[str, Any]) -> str | No
         height = quality.get("actualHeight") or 1080
         bandwidth = quality.get("bitRate") or max(1_000_000, int(width * height * 4.2))
         attrs = [f"BANDWIDTH={bandwidth}", f"RESOLUTION={width}x{height}"]
-        if audio: attrs.append('AUDIO="audio"')
-        if subtitles: attrs.append('SUBTITLES="subs"')
+        if audio:
+            attrs.append('AUDIO="audio"')
+        if subtitles:
+            attrs.append('SUBTITLES="subs"')
         lines.extend(["#EXT-X-STREAM-INF:" + ",".join(attrs), quality["playlist"]])
-    master = asset_dir / "master.m3u8"
-    master.write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return master.name
+    playback_manifest = asset_dir / "playback.m3u8"
+    playback_manifest.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return playback_manifest.name
 
 
 def process_item(
@@ -104,10 +106,12 @@ def process_item(
     primary_audio = [track for track in primary_probe.tracks if track.kind == "audio"]
     primary_subtitles = [track for track in primary_probe.tracks if track.kind == "subtitle"]
     mode = item.processing_mode if item.processing_mode in {"auto", "split", "direct"} else "auto"
-    direct_mode = mode == "direct" or (mode == "auto" and item.direct_silent_mkv and not primary_audio and not primary_subtitles and len(variants) == 1)
+    direct_mode = mode == "direct"
+    if direct_mode:
+        warnings.append("Doğrudan dosya modu seçildi. MKV, Chromium tabanlı izleyicilerde oynatılmayabilir; önerilen mod HLS oynatma paketidir.")
 
     manifest: dict[str, Any] = {
-        "schemaVersion": 3, "assetId": asset_id,
+        "schemaVersion": 4, "assetId": asset_id,
         "title": metadata.get("title") if metadata and metadata.get("title") else item.title,
         "userTitle": item.title, "contentType": item.content_type,
         "externalIds": {"imdb": imdb_id, "tmdb": metadata.get("tmdbId") if metadata else item.tmdb_id},
@@ -119,8 +123,16 @@ def process_item(
             "archived": bool(item.keep_original), "videoPolicy": "lossless-stream-copy-only",
         },
         "metadata": metadata,
+        "artwork": {
+            "posterUrl": (metadata or {}).get("posterUrl"),
+            "backdropUrl": (metadata or {}).get("backdropUrl"),
+        },
         "trailerUrl": item.trailer_url or (metadata or {}).get("trailerUrl"),
-        "playback": {"master": None, "qualities": [], "audio": [], "subtitles": [], "direct": direct_mode},
+        "playback": {
+            "mode": "direct" if direct_mode else "unavailable",
+            "master": None, "directFile": None,
+            "qualities": [], "audio": [], "subtitles": [],
+        },
         "tracks": track_dicts(primary_probe), "warnings": warnings, "createdAt": int(time.time()),
     }
 
@@ -168,7 +180,17 @@ def process_item(
         shutil.copy2(source, archived)
         manifest["source"]["archiveFile"] = archived.relative_to(asset_dir).as_posix()
 
-    manifest["playback"]["master"] = write_master_manifest(asset_dir, manifest)
+    playback_manifest = write_master_manifest(asset_dir, manifest)
+    manifest["playback"]["master"] = playback_manifest
+    if playback_manifest:
+        manifest["playback"]["mode"] = "hls"
+    else:
+        direct_file = next((quality.get("file") for quality in manifest["playback"]["qualities"] if quality.get("file")), None)
+        manifest["playback"]["directFile"] = direct_file
+        manifest["playback"]["mode"] = "direct" if direct_file else "unavailable"
+        if not direct_mode:
+            warnings.append("Video stream-copy ile HLS paketlenemedi; yalnız doğrudan MKV fallback üretildi.")
+
     (asset_dir / "asset.json").write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
     enforce_folder_limits(asset_dir)
     return manifest
