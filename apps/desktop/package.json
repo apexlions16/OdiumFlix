@@ -1,0 +1,52 @@
+{
+  "name": "@odiumflix/desktop",
+  "version": "0.1.0",
+  "private": true,
+  "main": "dist/main.js",
+  "scripts": {
+    "dev": "concurrently \"npm run dev -w @odiumflix/web\" \"wait-on http://localhost:5173 && electron .\"",
+    "build": "tsc && electron-builder --dir",
+    "package": "tsc && electron-builder"
+  },
+  "dependencies": {
+    "electron": "43.1.1"
+  },
+  "devDependencies": {
+    "concurrently": "latest",
+    "electron-builder": "26.15.3",
+    "typescript": "7.0.2",
+    "wait-on": "latest"
+  },
+  "build": {
+    "appId": "com.odiumstudio.odiumflix",
+    "productName": "OdiumFlix",
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ]
+    },
+    "linux": {
+      "target": [
+        "AppImage"
+      ]
+    },
+    "extraResources": [
+      {
+        "from": "../web/dist",
+        "to": "web"
+      }
+    ]
+  }
+}

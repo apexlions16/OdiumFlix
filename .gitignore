@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+**/dist
+**/.expo
+**/.vite
+**/build
+**/release
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
