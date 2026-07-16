@@ -21,10 +21,25 @@ jobs:
       - name: Install FFmpeg for lossless self-test
         run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Validate worker syntax and lossless behavior
+        id: lossless
+        continue-on-error: true
         run: |
-          python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
-          PYTHONPATH=tools/media_pipeline python tools/media_pipeline/selftest_lossless.py
-          python tools/media_pipeline/odium_media.py diagnostics
+          set -o pipefail
+          {
+            python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/odium_media_payload_*.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
+            PYTHONPATH=tools/media_pipeline python tools/media_pipeline/selftest_lossless.py
+            python tools/media_pipeline/odium_media.py diagnostics
+          } 2>&1 | tee lossless-validation.log
+      - name: Upload lossless diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lossless-validation-log
+          path: lossless-validation.log
+          if-no-files-found: error
+      - name: Enforce lossless validation result
+        if: steps.lossless.outcome != 'success'
+        run: exit 1
       - name: Build viewer web
         run: |
           npm install --prefix apps/web
