@@ -9,8 +9,8 @@ permissions:
   contents: write
 
 env:
-  RELEASE_VERSION: 0.3.0-alpha.1
-  RELEASE_TAG: v0.3.0-alpha.1
+  RELEASE_VERSION: 0.3.0-alpha.2
+  RELEASE_TAG: v0.3.0-alpha.2
 
 jobs:
   web-packages:
@@ -44,7 +44,7 @@ jobs:
   windows-packages:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[release]')
     runs-on: windows-latest
-    timeout-minutes: 75
+    timeout-minutes: 85
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -65,7 +65,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install -r tools/media_pipeline/requirements.txt pyinstaller
-          python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/server.py
+          python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
           pyinstaller --noconfirm --clean --onefile --name odium-media --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet tools/media_pipeline/odium_media.py
           pyinstaller --noconfirm --clean --onefile --name OdiumFlix-Media-Server --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet --collect-submodules fastapi --collect-submodules uvicorn tools/media_pipeline/server.py
           New-Item -ItemType Directory -Force apps/studio-desktop/resources | Out-Null
@@ -76,11 +76,19 @@ jobs:
         run: |
           npm install --prefix apps/desktop
           npm run package --prefix apps/desktop
-      - name: Build Windows Studio
+      - name: Build and verify Windows Studio
         shell: pwsh
         run: |
           npm install --prefix apps/studio-desktop
+          $env:ODIUM_FFMPEG=(Resolve-Path apps/studio-desktop/node_modules/ffmpeg-static/ffmpeg.exe).Path
+          $env:ODIUM_FFPROBE=(Resolve-Path apps/studio-desktop/node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe).Path
+          & dist/odium-media.exe diagnostics
           npm run package --prefix apps/studio-desktop
+          $packagedProbe='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffprobe.exe'
+          $packagedFfmpeg='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffmpeg.exe'
+          if (-not (Test-Path $packagedProbe)) { throw "Packaged ffprobe missing: $packagedProbe" }
+          if (-not (Test-Path $packagedFfmpeg)) { throw "Packaged ffmpeg missing: $packagedFfmpeg" }
+          & $packagedProbe -version
       - name: Collect Windows packages
         shell: pwsh
         run: |
@@ -188,6 +196,6 @@ jobs:
           tag_name: ${{ env.RELEASE_TAG }}
           name: OdiumFlix ${{ env.RELEASE_TAG }}
           prerelease: true
-          body_path: docs/release-v0.3-alpha.md
+          body_path: docs/release-v0.3-alpha.2.md
           fail_on_unmatched_files: true
           files: release-assets/*
