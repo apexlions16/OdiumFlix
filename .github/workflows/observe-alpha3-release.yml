@@ -1,0 +1,23 @@
+name: Observe OdiumFlix Alpha 3 Release
+on:
+  pull_request:
+    paths:
+      - releases/observe-alpha3.json
+permissions:
+  actions: read
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch release workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          curl -fsSL -H "Authorization: Bearer ${GH_TOKEN}" -H "Accept: application/vnd.github+json" "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=451b03e39181b2164dc2df211c7d167cd3796a6c&per_page=20" > alpha3-release-runs.json
+          cat alpha3-release-runs.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alpha3-release-runs-json
+          path: alpha3-release-runs.json
+          if-no-files-found: error
