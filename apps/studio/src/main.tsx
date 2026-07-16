@@ -1,48 +1,349 @@
-import React,{useMemo,useRef,useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {createRoot} from 'react-dom/client';
-import {Activity,BarChart3,Bell,Check,ChevronDown,CloudUpload,FileVideo,Film,Gauge,HardDrive,Image,LayoutDashboard,Library,LoaderCircle,MoreHorizontal,Play,Search,Settings,ShieldCheck,Subtitles,Trash2,Users,WandSparkles,X} from 'lucide-react';
-import {catalog} from '@odiumflix/catalog';
+import {
+  Check, CloudUpload, Database, FileAudio, FileText, FileVideo,
+  FolderOpen, HardDrive, KeyRound, Link2, LoaderCircle, Plus, Settings,
+  ShieldCheck, Trash2, WandSparkles, X,
+} from 'lucide-react';
 import './styles.css';
+import './media.css';
 
-type Quality='2160p'|'1440p'|'1080p+'|'1080p'|'720p'|'480p';
-type ContentType='movie'|'short'|'episode'|'documentary';
-type BatchRow={id:string;fileName:string;localPath?:string;size:number;title:string;type:ContentType;sourceQuality:Quality;targets:Quality[];imdbId:string;season?:number;episode?:number;status:'ready'|'analyzing'|'queued'|'error';tracks?:string};
-type StudioBridge={selectMedia:()=>Promise<Array<{name:string;path:string;size:number}>>;startBatch:(payload:{rows:BatchRow[];settings:BatchSettings})=>Promise<{ok:boolean;message:string;logPath?:string}>};
-type BatchSettings={hfRepo:string;githubRepo:string;hfToken:string;githubToken:string;outputDir?:string};
-declare global{interface Window{odiumStudio?:StudioBridge}}
+type Quality = '2160p'|'1440p'|'1080p+'|'1080p'|'720p'|'480p';
+type ContentType = 'movie'|'short'|'episode'|'documentary';
+type ProcessingMode = 'auto'|'split'|'direct';
+type RepoType = 'dataset'|'model'|'space';
+type VideoCodec = 'auto'|'h264'|'h265'|'av1'|'vp9'|'copy';
+type AudioCodec = 'copy'|'aac'|'mp3'|'ac3'|'eac3'|'opus'|'vorbis'|'flac'|'alac'|'pcm_s16le'|'pcm_s24le';
 
-const qualities:Quality[]=['2160p','1440p','1080p+','1080p','720p','480p'];
-const nav=[['Genel Bakış',LayoutDashboard],['İçerikler',Library],['Toplu Yükleme',CloudUpload],['Medya İşleme',WandSparkles],['Görseller',Image],['Altyazı & Ses',Subtitles],['Analiz',BarChart3],['Kullanıcılar',Users]] as const;
-const id=()=>crypto.randomUUID?.()??`${Date.now()}-${Math.random()}`;
-const inferQuality=(name:string):Quality=>/2160|4k/i.test(name)?'2160p':/1440/i.test(name)?'1440p':/1080.*plus|fhd\+/i.test(name)?'1080p+':/1080|fhd/i.test(name)?'1080p':/720|hd/i.test(name)?'720p':'480p';
-const defaultTargets=(source:Quality)=>qualities.filter(q=>qualities.indexOf(q)>=qualities.indexOf(source)&&q!=='1440p');
-const prettyBytes=(n:number)=>n>1024**3?`${(n/1024**3).toFixed(1)} GB`:n>1024**2?`${(n/1024**2).toFixed(1)} MB`:`${Math.ceil(n/1024)} KB`;
+type PickedFile = {name:string;path?:string;size:number};
+type Attachment = PickedFile & {id:string};
 
-const App=()=>{const [active,setActive]=useState('Genel Bakış');const [upload,setUpload]=useState(false);return <div className="studio-shell">
-<aside><div className="logo"><span>O</span><div>ODIUMFLIX<small>STUDIO</small></div></div><nav>{nav.map(([label,Icon])=><button key={label} className={active===label?'active':''} onClick={()=>{setActive(label);if(label==='Toplu Yükleme')setUpload(true)}}><Icon size={19}/>{label}{label==='Medya İşleme'&&<i>2</i>}</button>)}</nav><div className="aside-bottom"><button><Settings/>Ayarlar</button><div className="profile"><span>KA</span><div><strong>Kerem Aslı</strong><small>Yönetici</small></div><ChevronDown size={16}/></div></div></aside>
-<main><header><div><p>OdiumFlix Studio</p><h1>{active}</h1></div><div className="head-actions"><label><Search size={18}/><input placeholder="İçeriklerde ara"/></label><button className="bell"><Bell size={19}/><i/></button><button className="publish" onClick={()=>setUpload(true)}><CloudUpload size={18}/>Toplu içerik yükle</button></div></header>
-<section className="welcome"><div><p>MEDYA MERKEZİ</p><h2>Arşivden yayına, tek akış.</h2><span>MKV parçaları, hazır kalite dosyaları, metadata ve Hugging Face commit’i birlikte yönetilir.</span></div><div className="health"><Gauge/><div><strong>%98</strong><span>Sistem sağlığı</span></div></div></section>
-<section className="stats"><Stat icon={<Film/>} value="24" label="Toplam içerik" note="+3 bu ay"/><Stat icon={<Play/>} value="1.284" label="Toplam izlenme" note="%18 artış"/><Stat icon={<Activity/>} value="87,4%" label="Tamamlama oranı" note="Son 30 gün"/><Stat icon={<ShieldCheck/>} value="9.000" label="Klasör güvenlik sınırı" note="Zorunlu kontrol"/></section>
-<div className="dashboard-grid"><section className="panel library"><div className="panel-head"><div><h3>İçerik Kitaplığı</h3><p>GitHub kataloğu ile Hugging Face asset eşleştirmesi</p></div><button>Tümünü gör</button></div><table><thead><tr><th>İçerik</th><th>Durum</th><th>Kalite</th><th>Ses / Altyazı</th><th>İzlenme</th><th/></tr></thead><tbody>{catalog.slice(0,5).map((item,i)=><tr key={item.id}><td><img src={item.poster}/><div><strong>{item.title}</strong><small>{item.year} · {item.duration}</small></div></td><td><span className={i===2?'scheduled':'live'}>{i===2?'Planlandı':'Yayında'}</span></td><td><b className="quality">{item.qualities[0]}</b></td><td>{item.audio.length} ses · {item.subtitles.length} altyazı</td><td>{[427,318,211,196,132][i]}</td><td><MoreHorizontal/></td></tr>)}</tbody></table></section>
-<section className="panel pipeline"><div className="panel-head"><div><h3>Medya İşleme</h3><p>Single-file CMAF ile düşük dosya sayısı</p></div><button><MoreHorizontal/></button></div><Job title="Gece Vardiyası.mkv" stage="Ses parçaları ayrılıyor" progress={72} eta="12 dk kaldı"/><Job title="Sessiz Sokak S01E03.mkv" stage="Batch commit hazırlanıyor" progress={38} eta="26 dk kaldı"/><div className="storage"><div><HardDrive/><span>Hugging Face + Xet</span><strong>100 dosyaya kadar tek commit</strong></div><i><b/></i><small>Dosya adları opak assetId ile tutulur; katalog GitHub'dadır.</small></div></section></div>
-<section className="lower-grid"><div className="panel chart"><div className="panel-head"><div><h3>İşleme Aktivitesi</h3><p>Son 7 gün</p></div><select><option>Bu hafta</option></select></div><div className="bars">{[34,52,45,73,61,88,76].map((h,i)=><div key={i}><i style={{height:`${h}%`}}/><span>{['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'][i]}</span></div>)}</div></div><div className="panel quick"><h3>Hızlı işlemler</h3><button onClick={()=>setUpload(true)}><CloudUpload/><span><b>Batch yükleme oluştur</b><small>Her dosyanın kalitesini ayrı seç</small></span></button><button><Image/><span><b>Metadata ve görseller</b><small>IMDb kimliğiyle TMDB eşleştir</small></span></button><button><Subtitles/><span><b>Parça editörü</b><small>Kodek, dil ve görünen adları düzenle</small></span></button></div></section>
-</main>{upload&&<BatchUploadModal onClose={()=>setUpload(false)}/>}</div>}
+type BatchRow = {
+  id:string;
+  fileName:string;
+  localPath?:string;
+  size:number;
+  title:string;
+  type:ContentType;
+  sourceQuality:Quality;
+  targets:Quality[];
+  imdbUrl:string;
+  season?:number;
+  episode?:number;
+  processingMode:ProcessingMode;
+  keepOriginal:boolean;
+  videoCodec:VideoCodec;
+  audioCodec:AudioCodec;
+  externalAudio:Attachment[];
+  externalSubtitles:Attachment[];
+};
 
-const BatchUploadModal=({onClose}:{onClose:()=>void})=>{const input=useRef<HTMLInputElement>(null);const [rows,setRows]=useState<BatchRow[]>([]);const [step,setStep]=useState(1);const [busy,setBusy]=useState(false);const [result,setResult]=useState('');const [settings,setSettings]=useState<BatchSettings>({hfRepo:'',githubRepo:'apexlions16/OdiumFlix',hfToken:'',githubToken:''});
-const estimatedFiles=useMemo(()=>rows.reduce((sum,r)=>sum+r.targets.length*3+10,0),[rows]);const commitCount=Math.max(1,Math.ceil(estimatedFiles/100));const maxFolder=Math.max(0,...rows.map(r=>r.targets.length*3+10));
-const addFiles=(files:Array<{name:string;path?:string;size:number}>)=>setRows(prev=>[...prev,...files.map(file=>{const source=inferQuality(file.name);return{id:id(),fileName:file.name,localPath:file.path,size:file.size,title:file.name.replace(/\.[^.]+$/,''),type:'movie' as ContentType,sourceQuality:source,targets:defaultTargets(source),imdbId:'',status:'ready' as const,tracks:/\.mkv$/i.test(file.name)?'Otomatik ffprobe':'Kaynak video'}})]);
-const selectDesktop=async()=>{if(window.odiumStudio){addFiles(await window.odiumStudio.selectMedia());return}input.current?.click()};
-const onBrowserFiles=(list:FileList|null)=>{if(list)addFiles(Array.from(list).map(f=>({name:f.name,size:f.size})))};
-const patch=(rowId:string,value:Partial<BatchRow>)=>setRows(v=>v.map(r=>r.id===rowId?{...r,...value}:r));
-const toggleQuality=(row:BatchRow,q:Quality)=>patch(row.id,{targets:row.targets.includes(q)?row.targets.filter(x=>x!==q):[...row.targets,q].sort((a,b)=>qualities.indexOf(a)-qualities.indexOf(b))});
-const exportPlan=()=>{const payload={schemaVersion:1,folderFileLimit:9000,maxOperationsPerCommit:100,items:rows.map(r=>({source:r.localPath||r.fileName,title:r.title,content_type:r.type,source_quality:r.sourceQuality,target_qualities:r.targets,imdb_id:r.imdbId||undefined,season:r.season,episode:r.episode}))};const url=URL.createObjectURL(new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='odiumflix-batch.json';a.click();URL.revokeObjectURL(url)};
-const start=async()=>{setBusy(true);setResult('');try{if(window.odiumStudio){const answer=await window.odiumStudio.startBatch({rows,settings});setResult(answer.message)}else{exportPlan();setResult('Batch planı indirildi. Windows Studio bu planı yerel FFmpeg işleyicisine gönderecek.')}}catch(e){setResult(e instanceof Error?e.message:String(e))}finally{setBusy(false)}};
-return <div className="modal"><div className="batch-card"><button className="x" onClick={onClose}><X/></button><div className="upload-title"><span><CloudUpload/></span><div><h2>Toplu medya yükleme</h2><p>Tek MKV, hazır kalite dosyaları veya bir dizinin birçok bölümünü aynı batch içinde işle.</p></div></div><div className="steps"><b className={step>=1?'on':''}>1 Dosyalar</b><i/><b className={step>=2?'on':''}>2 Kaliteler</b><i/><b className={step>=3?'on':''}>3 Hedef</b></div>
-{step===1&&<><input ref={input} hidden type="file" multiple accept=".mkv,.mp4,.mov,.m4v,.webm" onChange={e=>onBrowserFiles(e.target.files)}/><button className="drop" onClick={selectDesktop}><CloudUpload size={38}/><strong>Bir veya birden fazla dosya seç</strong><span>MKV içindeki ses, altyazı, kodek ve dil etiketleri otomatik çıkarılır.</span><small>Hazır 4K/1080p/720p dosyalarını da ayrı satırlar olarak ekleyebilirsin.</small></button>{rows.length>0&&<div className="selected-list">{rows.map(r=><div key={r.id}><FileVideo/><span><b>{r.fileName}</b><small>{prettyBytes(r.size)} · {r.tracks}</small></span><button onClick={()=>setRows(v=>v.filter(x=>x.id!==r.id))}><Trash2/></button></div>)}</div>}</>}
-{step===2&&<div className="batch-table-wrap"><table className="batch-table"><thead><tr><th>Dosya / içerik</th><th>Tür</th><th>Kaynak</th><th>Üretilecek kaliteler</th><th>IMDb</th><th/></tr></thead><tbody>{rows.map(row=><tr key={row.id}><td><input value={row.title} onChange={e=>patch(row.id,{title:e.target.value})}/><small>{row.fileName}</small>{row.type==='episode'&&<div className="episode-fields"><input type="number" min="1" placeholder="S" value={row.season||''} onChange={e=>patch(row.id,{season:+e.target.value})}/><input type="number" min="1" placeholder="B" value={row.episode||''} onChange={e=>patch(row.id,{episode:+e.target.value})}/></div>}</td><td><select value={row.type} onChange={e=>patch(row.id,{type:e.target.value as ContentType})}><option value="movie">Film</option><option value="short">Kısa film</option><option value="episode">Dizi bölümü</option><option value="documentary">Belgesel</option></select></td><td><select value={row.sourceQuality} onChange={e=>{const q=e.target.value as Quality;patch(row.id,{sourceQuality:q,targets:defaultTargets(q)})}}>{qualities.map(q=><option key={q}>{q}</option>)}</select></td><td><div className="quality-pills">{qualities.map(q=><button key={q} className={row.targets.includes(q)?'selected':''} onClick={()=>toggleQuality(row,q)}>{row.targets.includes(q)&&<Check size={12}/>} {q}</button>)}</div></td><td><input placeholder="tt1234567" value={row.imdbId} onChange={e=>patch(row.id,{imdbId:e.target.value})}/></td><td><button className="icon-danger" onClick={()=>setRows(v=>v.filter(x=>x.id!==row.id))}><Trash2/></button></td></tr>)}</tbody></table></div>}
-{step===3&&<div className="target-grid"><section><h3>Hugging Face</h3><label>Repo kimliği<input placeholder="kullanici/odiumflix-media" value={settings.hfRepo} onChange={e=>setSettings({...settings,hfRepo:e.target.value})}/></label><label>HF yazma tokenı<input type="password" placeholder="hf_..." value={settings.hfToken} onChange={e=>setSettings({...settings,hfToken:e.target.value})}/></label><p><ShieldCheck/> Xet etkin, büyük medya dosyaları opak assetId yollarına yüklenir.</p></section><section><h3>GitHub katalog</h3><label>Repository<input value={settings.githubRepo} onChange={e=>setSettings({...settings,githubRepo:e.target.value})}/></label><label>GitHub tokenı<input type="password" placeholder="github_pat_..." value={settings.githubToken} onChange={e=>setSettings({...settings,githubToken:e.target.value})}/></label><p><Library/> Bütün asset eşleştirmeleri batch sonunda tek katalog commit’i olur.</p></section><div className="batch-summary"><div><strong>{rows.length}</strong><span>medya işi</span></div><div><strong>{estimatedFiles}</strong><span>tahmini dosya</span></div><div><strong>{commitCount}</strong><span>HF commit</span></div><div className={maxFolder>=9000?'danger':''}><strong>{maxFolder}</strong><span>en dolu klasör / 9000</span></div></div>{result&&<div className="result">{result}</div>}</div>}
-<div className="modal-actions"><button onClick={step===1?onClose:()=>setStep(step-1)}>{step===1?'Vazgeç':'Geri'}</button>{step<3?<button className="primary" disabled={!rows.length} onClick={()=>setStep(step+1)}>Devam et</button>:<button className="primary" disabled={busy||!rows.length} onClick={start}>{busy?<><LoaderCircle className="spin"/> İşleniyor</>:<><CloudUpload/> Batch'i başlat</>}</button>}</div></div></div>}
+type BatchSettings = {
+  hfRepo:string;
+  hfRepoType:RepoType;
+  hfPrivate:boolean;
+  hfToken:string;
+  githubRepo:string;
+  githubToken:string;
+  githubBranch:string;
+  tmdbToken:string;
+  metadataLanguage:string;
+  outputDir?:string;
+};
 
-const Stat=({icon,value,label,note}:{icon:React.ReactNode;value:string;label:string;note:string})=><div className="stat"><span>{icon}</span><div><strong>{value}</strong><p>{label}</p><small>{note}</small></div></div>;
-const Job=({title,stage,progress,eta}:{title:string;stage:string;progress:number;eta:string})=><div className="job"><div className="job-icon"><Film/></div><div><strong>{title}</strong><span>{stage}</span><i><b style={{width:`${progress}%`}}/></i><small>{progress}% · {eta}</small></div></div>;
+type MetadataResult = {
+  title?:string;
+  type?:string;
+  overview?:string;
+  releaseDate?:string;
+  runtime?:number;
+  genres?:string[];
+  cast?:Array<{name?:string;character?:string}>;
+  trailerUrl?:string;
+};
+
+type StudioBridge = {
+  selectMedia:()=>Promise<PickedFile[]>;
+  selectAudio:()=>Promise<PickedFile[]>;
+  selectSubtitles:()=>Promise<PickedFile[]>;
+  startBatch:(payload:{rows:BatchRow[];settings:BatchSettings})=>Promise<{ok:boolean;message:string;logPath?:string}>;
+  fetchMetadata:(payload:{imdbUrl:string;tmdbToken:string;language:string})=>Promise<{ok:boolean;message:string;metadata?:MetadataResult}>;
+};
+
+declare global { interface Window { odiumStudio?: StudioBridge } }
+
+const qualities: Quality[] = ['2160p','1440p','1080p+','1080p','720p','480p'];
+const audioCodecs: AudioCodec[] = ['copy','aac','mp3','ac3','eac3','opus','vorbis','flac','alac','pcm_s16le','pcm_s24le'];
+const videoCodecs: VideoCodec[] = ['auto','h264','h265','av1','vp9','copy'];
+const uid = () => crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+
+const inferQuality = (name:string):Quality =>
+  /2160|4k/i.test(name) ? '2160p' :
+  /1440/i.test(name) ? '1440p' :
+  /1080.*plus|fhd\+/i.test(name) ? '1080p+' :
+  /1080|fhd/i.test(name) ? '1080p' :
+  /720|hd/i.test(name) ? '720p' : '480p';
+
+const cleanTitle = (name:string) => name
+  .replace(/\.[^.]+$/, '')
+  .replace(/\b(2160p|1440p|1080p\+?|720p|480p|4k|fhd\+?|web-?dl|bluray|x26[45]|hevc|av1)\b/gi, ' ')
+  .replace(/[._-]+/g, ' ')
+  .replace(/\s+/g, ' ')
+  .trim();
+
+const defaultTargets = (source:Quality) =>
+  qualities.filter(quality => qualities.indexOf(quality) >= qualities.indexOf(source) && quality !== '1440p');
+
+const prettyBytes = (size:number) =>
+  size > 1024 ** 3 ? `${(size / 1024 ** 3).toFixed(1)} GB` :
+  size > 1024 ** 2 ? `${(size / 1024 ** 2).toFixed(1)} MB` :
+  `${Math.ceil(size / 1024)} KB`;
+
+const App = () => {
+  const browserMedia = useRef<HTMLInputElement>(null);
+  const [rows, setRows] = useState<BatchRow[]>([]);
+  const [settings, setSettings] = useState<BatchSettings>({
+    hfRepo: '',
+    hfRepoType: 'dataset',
+    hfPrivate: false,
+    hfToken: '',
+    githubRepo: 'apexlions16/OdiumFlix',
+    githubToken: '',
+    githubBranch: 'main',
+    tmdbToken: '',
+    metadataLanguage: 'tr-TR',
+  });
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState('');
+  const [settingsOpen, setSettingsOpen] = useState(true);
+
+  const estimatedFiles = useMemo(
+    () => rows.reduce((total, row) => {
+      const videoFiles = row.processingMode === 'direct' ? 1 : row.targets.length * 3;
+      const audioFiles = Math.max(1, row.externalAudio.length + 1) * 2;
+      const subtitleFiles = row.externalSubtitles.length * 3;
+      return total + videoFiles + audioFiles + subtitleFiles + 4;
+    }, 0),
+    [rows],
+  );
+
+  const addMedia = (files:PickedFile[]) => {
+    setRows(current => [
+      ...current,
+      ...files.map(file => {
+        const sourceQuality = inferQuality(file.name);
+        return {
+          id: uid(), fileName: file.name, localPath: file.path, size: file.size,
+          title: cleanTitle(file.name), type: 'movie' as ContentType,
+          sourceQuality, targets: defaultTargets(sourceQuality), imdbUrl: '',
+          processingMode: 'auto' as ProcessingMode, keepOriginal: false,
+          videoCodec: 'auto' as VideoCodec, audioCodec: 'aac' as AudioCodec,
+          externalAudio: [], externalSubtitles: [],
+        };
+      }),
+    ]);
+  };
+
+  const selectMedia = async () => {
+    if (window.odiumStudio) addMedia(await window.odiumStudio.selectMedia());
+    else browserMedia.current?.click();
+  };
+
+  const patch = (id:string, value:Partial<BatchRow>) =>
+    setRows(current => current.map(row => row.id === id ? {...row, ...value} : row));
+
+  const attach = async (row:BatchRow, kind:'audio'|'subtitles') => {
+    if (!window.odiumStudio) {
+      setResult('Harici ses ve altyazı seçimi Windows Studio içinde kullanılabilir.');
+      return;
+    }
+    const files = kind === 'audio'
+      ? await window.odiumStudio.selectAudio()
+      : await window.odiumStudio.selectSubtitles();
+    const attachments = files.map(file => ({...file, id: uid()}));
+    patch(row.id, kind === 'audio'
+      ? {externalAudio: [...row.externalAudio, ...attachments]}
+      : {externalSubtitles: [...row.externalSubtitles, ...attachments]});
+  };
+
+  const removeAttachment = (row:BatchRow, kind:'audio'|'subtitles', attachmentId:string) =>
+    patch(row.id, kind === 'audio'
+      ? {externalAudio: row.externalAudio.filter(file => file.id !== attachmentId)}
+      : {externalSubtitles: row.externalSubtitles.filter(file => file.id !== attachmentId)});
+
+  const toggleQuality = (row:BatchRow, quality:Quality) =>
+    patch(row.id, {
+      targets: row.targets.includes(quality)
+        ? row.targets.filter(value => value !== quality)
+        : [...row.targets, quality].sort((a,b) => qualities.indexOf(a) - qualities.indexOf(b)),
+    });
+
+  const fetchMetadata = async (row:BatchRow) => {
+    if (!row.imdbUrl) return setResult('Önce IMDb bağlantısını yapıştır.');
+    if (!settings.tmdbToken) return setResult('Metadata için Ayarlar bölümüne TMDB API Read Access Token gir.');
+    if (!window.odiumStudio) return setResult('IMDb metadata önizlemesi Windows Studio içinde çalışır.');
+    setBusy(true);
+    try {
+      const answer = await window.odiumStudio.fetchMetadata({
+        imdbUrl: row.imdbUrl,
+        tmdbToken: settings.tmdbToken,
+        language: settings.metadataLanguage,
+      });
+      if (!answer.ok || !answer.metadata) throw new Error(answer.message);
+      patch(row.id, {
+        title: answer.metadata.title || row.title,
+        type: answer.metadata.type === 'tv' ? 'episode' : row.type,
+      });
+      setResult(`${answer.metadata.title || row.title} metadata bilgileri alındı.`);
+    } catch (reason) {
+      setResult(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const exportPlan = () => {
+    const payload = {schemaVersion: 2, settings, rows};
+    const url = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], {type:'application/json'}));
+    const anchor = document.createElement('a');
+    anchor.href = url;
+    anchor.download = 'odiumflix-batch-v2.json';
+    anchor.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const startBatch = async () => {
+    if (!rows.length) return;
+    if (!settings.hfRepo || !settings.hfToken) {
+      setSettingsOpen(true);
+      setResult('Hugging Face repo kimliği ve yazma tokenı zorunlu.');
+      return;
+    }
+    setBusy(true);
+    setResult('');
+    try {
+      if (!window.odiumStudio) {
+        exportPlan();
+        setResult('Batch planı indirildi. Gerçek yerel işleme için Windows Studio EXE sürümünü kullan.');
+        return;
+      }
+      const answer = await window.odiumStudio.startBatch({rows, settings});
+      if (!answer.ok) throw new Error(answer.message);
+      setResult(answer.message);
+    } catch (reason) {
+      setResult(reason instanceof Error ? reason.message : String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return <div className="media-shell">
+    <aside className="media-sidebar">
+      <div className="logo"><span>O</span><div>ODIUMFLIX<small>STUDIO 0.3</small></div></div>
+      <button className="side-active"><CloudUpload/>İçerik yükleme</button>
+      <button onClick={() => setSettingsOpen(!settingsOpen)}><Settings/>Bağlantılar</button>
+      <div className="side-note"><ShieldCheck/><span>Klasör başına sabit sınır</span><strong>9000 dosya</strong></div>
+    </aside>
+
+    <main className="media-main">
+      <header className="media-header">
+        <div><p>YEREL MEDYA MERKEZİ</p><h1>Arşivden Hugging Face’e</h1><span>MKV yerelde ayrılır; video kaliteleri, ortak ses seti ve altyazılar tek asset altında yüklenir.</span></div>
+        <button className="media-primary" onClick={selectMedia}><Plus/>Kaynak ekle</button>
+      </header>
+
+      {settingsOpen && <section className="connection-grid">
+        <ConnectionCard icon={<HardDrive/>} title="Hugging Face">
+          <label>Repo kimliği<input value={settings.hfRepo} onChange={event => setSettings({...settings, hfRepo:event.target.value})} placeholder="kullanici/odiumflix-media"/></label>
+          <div className="field-row">
+            <label>Repo türü<select value={settings.hfRepoType} onChange={event => setSettings({...settings, hfRepoType:event.target.value as RepoType})}><option value="dataset">Dataset</option><option value="model">Model</option><option value="space">Space</option></select></label>
+            <label className="check-field"><input type="checkbox" checked={settings.hfPrivate} onChange={event => setSettings({...settings, hfPrivate:event.target.checked})}/>Özel repo</label>
+          </div>
+          <label>Write token<input type="password" value={settings.hfToken} onChange={event => setSettings({...settings, hfToken:event.target.value})} placeholder="hf_..."/></label>
+        </ConnectionCard>
+
+        <ConnectionCard icon={<Database/>} title="GitHub katalog">
+          <label>Repository<input value={settings.githubRepo} onChange={event => setSettings({...settings, githubRepo:event.target.value})}/></label>
+          <label>Branch<input value={settings.githubBranch} onChange={event => setSettings({...settings, githubBranch:event.target.value})}/></label>
+          <label>Fine-grained token<input type="password" value={settings.githubToken} onChange={event => setSettings({...settings, githubToken:event.target.value})} placeholder="github_pat_..."/></label>
+        </ConnectionCard>
+
+        <ConnectionCard icon={<Link2/>} title="IMDb metadata">
+          <label>TMDB Read Access Token<input type="password" value={settings.tmdbToken} onChange={event => setSettings({...settings, tmdbToken:event.target.value})} placeholder="eyJhbGci..."/></label>
+          <label>Dil<select value={settings.metadataLanguage} onChange={event => setSettings({...settings, metadataLanguage:event.target.value})}><option value="tr-TR">Türkçe</option><option value="en-US">English</option></select></label>
+          <p>IMDb bağlantısındaki <code>tt…</code> kimliğiyle başlık, açıklama, oyuncular, görseller ve resmi fragman çekilir.</p>
+        </ConnectionCard>
+      </section>}
+
+      <section className="batch-summary">
+        <div><strong>{rows.length}</strong><span>kaynak dosya</span></div>
+        <div><strong>{estimatedFiles}</strong><span>tahmini çıktı</span></div>
+        <div><strong>{Math.max(0, Math.ceil(estimatedFiles / 100))}</strong><span>HF commit</span></div>
+        <div><strong>1×</strong><span>ortak ses seti / asset</span></div>
+      </section>
+
+      {!rows.length ? <section className="catalog-empty" onClick={selectMedia}>
+        <FolderOpen size={52}/>
+        <h2>Mock içerikler kaldırıldı</h2>
+        <p>Henüz gerçek içerik yok. Bir MKV, MP4 veya hazır kalite dosyası seçerek ilk batch’i oluştur.</p>
+        <button className="media-primary"><CloudUpload/>Dosyaları seç</button>
+      </section> : <section className="media-list">
+        {rows.map(row => <article className="media-card" key={row.id}>
+          <div className="media-card-head">
+            <FileVideo/>
+            <div><input className="title-input" value={row.title} onChange={event => patch(row.id,{title:event.target.value})}/><small>{row.fileName} · {prettyBytes(row.size)}</small></div>
+            <button className="icon-danger" onClick={() => setRows(current => current.filter(value => value.id !== row.id))}><Trash2/></button>
+          </div>
+
+          <div className="media-fields">
+            <label>İçerik türü<select value={row.type} onChange={event => patch(row.id,{type:event.target.value as ContentType})}><option value="movie">Film</option><option value="short">Kısa film</option><option value="episode">Dizi bölümü</option><option value="documentary">Belgesel</option></select></label>
+            <label>İşleme<select value={row.processingMode} onChange={event => patch(row.id,{processingMode:event.target.value as ProcessingMode})}><option value="auto">Otomatik · sessiz MKV doğrudan</option><option value="split">Yerelde ayır ve stream hazırla</option><option value="direct">Dosyayı işlemeden yükle</option></select></label>
+            <label>Kaynak kalite<select value={row.sourceQuality} onChange={event => {const quality=event.target.value as Quality;patch(row.id,{sourceQuality:quality,targets:defaultTargets(quality)})}}>{qualities.map(quality => <option key={quality}>{quality}</option>)}</select></label>
+            <label>Video kodeği<select value={row.videoCodec} onChange={event => patch(row.id,{videoCodec:event.target.value as VideoCodec})}>{videoCodecs.map(codec => <option key={codec} value={codec}>{codec === 'auto' ? 'Otomatik · hazır kaliteyi kopyala' : codec}</option>)}</select></label>
+            <label>Ses kodeği<select value={row.audioCodec} onChange={event => patch(row.id,{audioCodec:event.target.value as AudioCodec})}>{audioCodecs.map(codec => <option key={codec} value={codec}>{codec === 'copy' ? 'Kaynak kodeğini koru (tümü)' : codec}</option>)}</select></label>
+            <label className="check-field"><input type="checkbox" checked={row.keepOriginal} onChange={event => patch(row.id,{keepOriginal:event.target.checked})}/>Orijinal dosyayı da sakla</label>
+          </div>
+
+          <div className="quality-block">
+            <strong>Üretilecek video kaliteleri</strong>
+            <div className="quality-pills">{qualities.map(quality => <button key={quality} className={row.targets.includes(quality)?'selected':''} onClick={() => toggleQuality(row,quality)}>{row.targets.includes(quality)&&<Check size={12}/>} {quality}</button>)}</div>
+          </div>
+
+          <div className="imdb-row">
+            <Link2/><input value={row.imdbUrl} onChange={event => patch(row.id,{imdbUrl:event.target.value})} placeholder="https://www.imdb.com/title/tt1234567/"/>
+            <button onClick={() => fetchMetadata(row)} disabled={busy}><WandSparkles/>Metadata getir</button>
+          </div>
+
+          {row.type === 'episode' && <div className="episode-row"><label>Sezon<input type="number" min="1" value={row.season||''} onChange={event => patch(row.id,{season:Number(event.target.value)||undefined})}/></label><label>Bölüm<input type="number" min="1" value={row.episode||''} onChange={event => patch(row.id,{episode:Number(event.target.value)||undefined})}/></label></div>}
+
+          <div className="attachments">
+            <AttachmentPanel icon={<FileAudio/>} title="Ortak ses dosyaları" files={row.externalAudio} onAdd={() => attach(row,'audio')} onRemove={id => removeAttachment(row,'audio',id)} copy="Hazır 4K/1080p/720p videoların tamamı bu tek ses setini kullanır."/>
+            <AttachmentPanel icon={<FileText/>} title="Harici altyazılar" files={row.externalSubtitles} onAdd={() => attach(row,'subtitles')} onRemove={id => removeAttachment(row,'subtitles',id)} copy="SRT, VTT, ASS, SSA, SUB, STL, TTML ve FFmpeg’in okuyabildiği diğer formatlar."/>
+          </div>
+        </article>)}
+      </section>}
+
+      {result && <div className="media-result">{result}<button onClick={() => setResult('')}><X/></button></div>}
+      <footer className="media-footer">
+        <div><KeyRound/><span>Tokenlar release içine gömülmez; yalnız yerel worker sürecine aktarılır.</span></div>
+        <button className="media-primary" disabled={!rows.length||busy} onClick={startBatch}>{busy?<><LoaderCircle className="spin"/>İşleniyor</>:<><CloudUpload/>Yerelde işle ve yükle</>}</button>
+      </footer>
+
+      <input ref={browserMedia} hidden type="file" multiple accept=".mkv,.mp4,.mov,.m4v,.webm" onChange={event => {
+        const files = Array.from(event.target.files || []).map(file => ({name:file.name,size:file.size}));
+        addMedia(files);
+        event.currentTarget.value='';
+      }}/>
+    </main>
+  </div>;
+};
+
+const ConnectionCard = ({icon,title,children}:{icon:React.ReactNode;title:string;children:React.ReactNode}) =>
+  <section className="connection-card"><header>{icon}<h3>{title}</h3></header>{children}</section>;
+
+const AttachmentPanel = ({icon,title,files,onAdd,onRemove,copy}:{icon:React.ReactNode;title:string;files:Attachment[];onAdd:()=>void;onRemove:(id:string)=>void;copy:string}) =>
+  <section className="attachment-panel">
+    <header>{icon}<div><strong>{title}</strong><small>{copy}</small></div><button onClick={onAdd}><Plus/>Ekle</button></header>
+    {files.length>0 && <div className="attachment-files">{files.map(file => <span key={file.id}>{file.name}<button onClick={() => onRemove(file.id)}><X/></button></span>)}</div>}
+  </section>;
+
 createRoot(document.getElementById('root')!).render(<App/>);
