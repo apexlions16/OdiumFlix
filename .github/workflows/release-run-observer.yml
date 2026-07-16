@@ -1,0 +1,21 @@
+name: Release Run Observer
+on:
+  pull_request:
+permissions:
+  actions: read
+  contents: read
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Read release runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_SHA: c7ab2ccb9ea23ee3f63083b60dd71525f6a40e0b
+        run: |
+          gh api "/repos/${GITHUB_REPOSITORY}/actions/runs?head_sha=${TARGET_SHA}&per_page=20" > release-runs.json
+          jq '{total_count, workflow_runs: [.workflow_runs[] | {id,name,event,status,conclusion,html_url,run_number,created_at,updated_at}]}' release-runs.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-runs-json
+          path: release-runs.json
