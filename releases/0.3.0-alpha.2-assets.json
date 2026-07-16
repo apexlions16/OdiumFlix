@@ -1,0 +1,44 @@
+{
+  "version": "0.3.0-alpha.2",
+  "tag": "v0.3.0-alpha.2",
+  "commit": "69beab98806867655d110a628d466fc1d79cf433",
+  "jobs": {
+    "web": "success",
+    "windows": "success",
+    "android": "success"
+  },
+  "assets": [
+    {
+      "name": "OdiumFlix-0.3.0-alpha.2-x64.exe",
+      "sizeBytes": 348200380
+    },
+    {
+      "name": "OdiumFlix-Android-0.3.0-alpha.2.apk",
+      "sizeBytes": 68257441
+    },
+    {
+      "name": "OdiumFlix-Media-Server-0.3.0-alpha.2.exe",
+      "sizeBytes": 22783852
+    },
+    {
+      "name": "OdiumFlix-Media-Worker-0.3.0-alpha.2.exe",
+      "sizeBytes": 22531009
+    },
+    {
+      "name": "OdiumFlix-Studio-0.3.0-alpha.2-x64.exe",
+      "sizeBytes": 990136347
+    },
+    {
+      "name": "OdiumFlix-Studio-Android-0.3.0-alpha.2.apk",
+      "sizeBytes": 68291477
+    },
+    {
+      "name": "OdiumFlix-Studio-Web-0.3.0-alpha.2.zip",
+      "sizeBytes": 79060
+    },
+    {
+      "name": "OdiumFlix-Web-0.3.0-alpha.2.zip",
+      "sizeBytes": 75192
+    }
+  ]
+}
