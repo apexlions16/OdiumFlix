@@ -1,4 +1,425 @@
 {
   "schemaVersion": 2,
-  "assets": {}
+  "assets": {
+    "e4594b0f8bd24245b2a1b49086ecee77": {
+      "title": "Virüs",
+      "contentType": "movie",
+      "metadata": {
+        "provider": "tmdb",
+        "tmdbId": 9423,
+        "imdbId": "tt0120458",
+        "type": "movie",
+        "title": "Virüs",
+        "originalTitle": "Virus",
+        "overview": "Okyanusun ortasında seyreden bir kurtarma gemisi mürettebatı, ansızın şiddetli bir kasırganın patlak vermesi ile mahsur kalırlar ve bölgede rastladıkları terke dilmiş üstün teknolojiye sahip bir Rus araştırma gemisine çıkarlar. Ancak, terk edilmiş görülen bu esrarengiz gemide, ters giden bir şeyler var gibidir…",
+        "releaseDate": "1999-01-14",
+        "runtime": 100,
+        "genres": [
+          "Korku",
+          "Aksiyon",
+          "Bilim-Kurgu"
+        ],
+        "posterPath": "/5Np88iigCfnXvMlMKmCcbPVIbYQ.jpg",
+        "backdropPath": "/j3Nvs9rZDjsOU3jwtxUwyEum1pn.jpg",
+        "posterUrl": "https://image.tmdb.org/t/p/original/5Np88iigCfnXvMlMKmCcbPVIbYQ.jpg",
+        "backdropUrl": "https://image.tmdb.org/t/p/original/j3Nvs9rZDjsOU3jwtxUwyEum1pn.jpg",
+        "cast": [
+          {
+            "name": "Jamie Lee Curtis",
+            "character": "Kelly Foster",
+            "profilePath": "/eWKubKAAssRzmFwCZKh1mdYqGCH.jpg"
+          },
+          {
+            "name": "William Baldwin",
+            "character": "Steve Baker",
+            "profilePath": "/mFCUAl6Rko6ocONhFDCpztcmKXd.jpg"
+          },
+          {
+            "name": "Donald Sutherland",
+            "character": "Captain Robert Everton",
+            "profilePath": "/yM8WO2BYqFvgQXAvf4CIuCYnY4j.jpg"
+          },
+          {
+            "name": "Joanna Pacuła",
+            "character": "Nadia Vinogradova",
+            "profilePath": "/oGzAZY8L1KjsFtFoLpsqUwvBA4k.jpg"
+          },
+          {
+            "name": "Marshall Bell",
+            "character": "J.W. Woods Jr.",
+            "profilePath": "/zLa0DdHu1pvEme0DyylltLh08rY.jpg"
+          },
+          {
+            "name": "Sherman Augustus",
+            "character": "Richie",
+            "profilePath": "/iLJyjsRdsip0djQ2wLJL0x7Xtjt.jpg"
+          },
+          {
+            "name": "Cliff Curtis",
+            "character": "Hiko",
+            "profilePath": "/dfaElGoyJWseFWxXwEMLL9WTi7V.jpg"
+          },
+          {
+            "name": "Julio Oscar Mechoso",
+            "character": "Squeaky",
+            "profilePath": "/2m1vtlRlSxozMOoHeobCY2pbrPi.jpg"
+          },
+          {
+            "name": "ლევან უჩანეიშვილი",
+            "character": "Captain Alexi",
+            "profilePath": "/oafFCVXZK6vb7DRzcIr6R5MXcH1.jpg"
+          },
+          {
+            "name": "Юрий Червоткин",
+            "character": "Colonel Kominski",
+            "profilePath": "/snTWxgT6xgMJcfJXlS9lKmJGtwB.jpg"
+          },
+          {
+            "name": "Keith Flippen",
+            "character": "Captain Lonya Rostov",
+            "profilePath": "/cs9aNyWHNRYlnizulq0oST4EUJO.jpg"
+          },
+          {
+            "name": "Olga Rzhepetskaya-Retchin",
+            "character": "Cosmonaut",
+            "profilePath": null
+          },
+          {
+            "name": "David Eggby",
+            "character": "Norfolk Captain",
+            "profilePath": "/1Mgz9jkSa6vJ2U9ezmOTYXTvY3m.jpg"
+          }
+        ],
+        "crew": [
+          {
+            "name": "Chuck Pfarrer",
+            "job": "Screenplay",
+            "department": "Writing"
+          },
+          {
+            "name": "David Eggby",
+            "job": "Director of Photography",
+            "department": "Camera"
+          },
+          {
+            "name": "M. Scott Smith",
+            "job": "Editor",
+            "department": "Editing"
+          },
+          {
+            "name": "Gale Anne Hurd",
+            "job": "Producer",
+            "department": "Production"
+          },
+          {
+            "name": "Joel McNeely",
+            "job": "Original Music Composer",
+            "department": "Sound"
+          },
+          {
+            "name": "Christopher Allen Nelson",
+            "job": "Special Effects Makeup Artist",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Billy D. Lucas",
+            "job": "Stunts",
+            "department": "Crew"
+          },
+          {
+            "name": "Jaymes Hinkle",
+            "job": "Art Direction",
+            "department": "Art"
+          },
+          {
+            "name": "Frank Perry Rose",
+            "job": "Costume Supervisor",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Donald B. Woodruff",
+            "job": "Art Direction",
+            "department": "Art"
+          },
+          {
+            "name": "Robert J. Quinn",
+            "job": "Art Direction",
+            "department": "Art"
+          },
+          {
+            "name": "Donald Krafft",
+            "job": "Set Decoration",
+            "department": "Art"
+          },
+          {
+            "name": "Mayling Cheng",
+            "job": "Production Design",
+            "department": "Art"
+          },
+          {
+            "name": "Deborah Everton",
+            "job": "Costume Design",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Richard L. Anderson",
+            "job": "Supervising Sound Editor",
+            "department": "Sound"
+          },
+          {
+            "name": "George Simpson",
+            "job": "Supervising Sound Editor",
+            "department": "Sound"
+          },
+          {
+            "name": "Domenic Silvestri",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "Tom Jones Jr.",
+            "job": "Construction Coordinator",
+            "department": "Art"
+          },
+          {
+            "name": "Alan Hook",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "Hilda Hodges",
+            "job": "Foley",
+            "department": "Sound"
+          },
+          {
+            "name": "Vic Petrotta Jr.",
+            "job": "Property Master",
+            "department": "Crew"
+          },
+          {
+            "name": "Alan Au",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "William G. Davis",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "Andrew Menzies",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "Jean Chan",
+            "job": "Art Department Coordinator",
+            "department": "Art"
+          },
+          {
+            "name": "E.W. Bradford",
+            "job": "Construction Coordinator",
+            "department": "Art"
+          },
+          {
+            "name": "Dorn Merrill Kennison",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "Daniel R. Jennings",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "Bill Taliaferro",
+            "job": "Set Designer",
+            "department": "Art"
+          },
+          {
+            "name": "Joel Kramer",
+            "job": "Stunt Coordinator",
+            "department": "Crew"
+          },
+          {
+            "name": "Alan Collis",
+            "job": "Transportation Coordinator",
+            "department": "Crew"
+          },
+          {
+            "name": "Deirdre Horgan",
+            "job": "Script Supervisor",
+            "department": "Directing"
+          },
+          {
+            "name": "Michael Tackett",
+            "job": "Still Photographer",
+            "department": "Camera"
+          },
+          {
+            "name": "Craig Pettigrew",
+            "job": "Music Editor",
+            "department": "Sound"
+          },
+          {
+            "name": "Jay Riddle",
+            "job": "Visual Effects Supervisor",
+            "department": "Visual Effects"
+          },
+          {
+            "name": "Charles Thomas Baxter",
+            "job": "Location Manager",
+            "department": "Production"
+          },
+          {
+            "name": "Michele C. Vallillo",
+            "job": "Visual Effects Producer",
+            "department": "Visual Effects"
+          },
+          {
+            "name": "Katrina Mastrolia",
+            "job": "Set Costumer",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Lori J. Nelson",
+            "job": "Visual Effects Supervisor",
+            "department": "Visual Effects"
+          },
+          {
+            "name": "Jennifer Opresnick",
+            "job": "Script Supervisor",
+            "department": "Directing"
+          },
+          {
+            "name": "Joseph T. Mastrolia",
+            "job": "Set Costumer",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Eric Lindemann",
+            "job": "Sound Designer",
+            "department": "Sound"
+          },
+          {
+            "name": "Alonzo Ruvalcaba",
+            "job": "Visual Effects Producer",
+            "department": "Visual Effects"
+          },
+          {
+            "name": "Dick Bernstein",
+            "job": "Music Editor",
+            "department": "Sound"
+          },
+          {
+            "name": "Johnny Caruso",
+            "job": "Music Editor",
+            "department": "Sound"
+          },
+          {
+            "name": "John Roesch",
+            "job": "Foley",
+            "department": "Sound"
+          },
+          {
+            "name": "Tim Trella",
+            "job": "Stunts",
+            "department": "Crew"
+          },
+          {
+            "name": "Tom Elliott",
+            "job": "Stunts",
+            "department": "Crew"
+          },
+          {
+            "name": "Pam Dixon",
+            "job": "Casting",
+            "department": "Production"
+          },
+          {
+            "name": "Carla Brand Breitner",
+            "job": "First Assistant Director",
+            "department": "Directing"
+          },
+          {
+            "name": "Pamela Priest",
+            "job": "Key Hair Stylist",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Bruce MacCallum",
+            "job": "Camera Operator",
+            "department": "Camera"
+          },
+          {
+            "name": "Sandra S. Orsolyak",
+            "job": "Makeup Artist",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Jeffery J. Tufano",
+            "job": "Camera Operator",
+            "department": "Camera"
+          },
+          {
+            "name": "Emanuel Millar",
+            "job": "Hair Designer",
+            "department": "Costume & Make-Up"
+          },
+          {
+            "name": "Keith Smith",
+            "job": "Pilot",
+            "department": "Crew"
+          },
+          {
+            "name": "Troy N. Wade",
+            "job": "Dolly Grip",
+            "department": "Camera"
+          },
+          {
+            "name": "Russell Hardee",
+            "job": "Rigging Grip",
+            "department": "Lighting"
+          },
+          {
+            "name": "Dennis Zoppe",
+            "job": "Key Grip",
+            "department": "Camera"
+          },
+          {
+            "name": "Wesley R. Hardee",
+            "job": "Rigging Grip",
+            "department": "Lighting"
+          }
+        ],
+        "trailerUrl": null
+      },
+      "trailerUrl": null,
+      "externalIds": {
+        "imdb": "tt0120458",
+        "tmdb": 9423
+      },
+      "episode": null,
+      "hfPath": "objects/e4/e4594b0f8bd24245b2a1b49086ecee77",
+      "master": null,
+      "qualities": [
+        {
+          "name": "1080p",
+          "declaredQuality": "1080p",
+          "actualWidth": 1920,
+          "actualHeight": 1080,
+          "codec": "h264",
+          "sourceName": "1080.mkv",
+          "packaging": "direct-original-container",
+          "losslessCopy": true,
+          "playlist": null,
+          "file": "video/1080p/media.mkv"
+        }
+      ],
+      "audio": [],
+      "subtitles": [],
+      "warnings": [],
+      "updatedAt": 1784224380
+    }
+  }
 }
