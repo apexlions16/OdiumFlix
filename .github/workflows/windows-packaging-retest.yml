@@ -19,12 +19,24 @@ jobs:
           npm run build --prefix apps/web
           npm install --prefix apps/studio
           npm run build --prefix apps/studio
-      - name: Package viewer
+      - name: Package viewer with captured log
         shell: pwsh
         run: |
-          npm install --prefix apps/desktop
-          npm run package --prefix apps/desktop
+          npm install --prefix apps/desktop *>&1 | Tee-Object -FilePath viewer-package.log
+          if ($LASTEXITCODE -ne 0) { Get-Content viewer-package.log -Tail 120; exit $LASTEXITCODE }
+          npm run package --prefix apps/desktop *>&1 | Tee-Object -FilePath viewer-package.log -Append
+          $code = $LASTEXITCODE
+          Get-Content viewer-package.log -Tail 160
+          exit $code
+      - name: Upload viewer package log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: viewer-package-log
+          path: viewer-package.log
+          if-no-files-found: warn
       - name: Package Studio
+        if: success()
         shell: pwsh
         run: |
           npm install --prefix apps/studio-desktop
