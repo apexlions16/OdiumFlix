@@ -1,12 +1,12 @@
 {
   "name": "@odiumflix/studio-desktop",
-  "version": "0.3.0-alpha.1",
+  "version": "0.3.0-alpha.2",
   "private": true,
   "main": "dist/main.js",
   "scripts": {
     "dev": "tsc && electron .",
     "build": "tsc",
-    "package": "tsc && electron-builder --win nsis portable"
+    "package": "tsc && electron-builder --win nsis"
   },
   "dependencies": {
     "ffmpeg-static": "latest",
@@ -25,10 +25,12 @@
     "asarUnpack": ["node_modules/ffmpeg-static/**/*", "node_modules/ffprobe-static/**/*"],
     "files": ["dist/**/*", "package.json", "node_modules/**/*"],
     "directories": {"output": "release"},
-    "win": {"target": ["nsis", "portable"], "artifactName": "OdiumFlix-Studio-${version}-${arch}.${ext}"},
+    "win": {"target": ["nsis"], "artifactName": "OdiumFlix-Studio-${version}-${arch}.${ext}"},
     "extraResources": [
       {"from": "../studio/dist", "to": "studio"},
-      {"from": "resources", "to": "worker", "filter": ["**/*"]}
+      {"from": "resources", "to": "worker", "filter": ["**/*"]},
+      {"from": "node_modules/ffmpeg-static/ffmpeg.exe", "to": "media-tools/ffmpeg.exe"},
+      {"from": "node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe", "to": "media-tools/ffprobe.exe"}
     ]
   }
 }

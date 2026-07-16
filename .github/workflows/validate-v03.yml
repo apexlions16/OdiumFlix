@@ -3,13 +3,17 @@ name: Validate OdiumFlix v0.3
 on:
   pull_request:
 
+concurrency:
+  group: validate-v03-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   web-and-python:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,8 +22,28 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Validate worker syntax
-        run: python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/server.py
+      - name: Install FFmpeg for lossless self-test
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+      - name: Validate worker syntax and lossless behavior
+        id: lossless
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          {
+            python -m py_compile tools/media_pipeline/media_common.py tools/media_pipeline/media_metadata.py tools/media_pipeline/media_packaging.py tools/media_pipeline/media_process.py tools/media_pipeline/media_remote.py tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
+            PYTHONPATH=tools/media_pipeline python tools/media_pipeline/selftest_lossless.py
+            python tools/media_pipeline/odium_media.py diagnostics
+          } 2>&1 | tee lossless-validation.log
+      - name: Upload lossless diagnostic
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lossless-validation-log
+          path: lossless-validation.log
+          if-no-files-found: error
+      - name: Enforce lossless validation result
+        if: steps.lossless.outcome != 'success'
+        run: exit 1
       - name: Build viewer web
         run: |
           npm install --prefix apps/web
@@ -64,7 +88,7 @@ jobs:
 
   windows-packages:
     runs-on: windows-latest
-    timeout-minutes: 75
+    timeout-minutes: 85
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -84,7 +108,7 @@ jobs:
         shell: pwsh
         run: |
           python -m pip install -r tools/media_pipeline/requirements.txt pyinstaller
-          python -m py_compile tools/media_pipeline/odium_media.py tools/media_pipeline/server.py
+          python -m py_compile tools/media_pipeline/media_common.py tools/media_pipeline/media_metadata.py tools/media_pipeline/media_packaging.py tools/media_pipeline/media_process.py tools/media_pipeline/media_remote.py tools/media_pipeline/odium_media.py tools/media_pipeline/server.py tools/media_pipeline/selftest_lossless.py
           pyinstaller --noconfirm --clean --onefile --name odium-media --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet tools/media_pipeline/odium_media.py
           pyinstaller --noconfirm --clean --onefile --name OdiumFlix-Media-Server --paths tools/media_pipeline --collect-submodules huggingface_hub --collect-all hf_xet --collect-submodules fastapi --collect-submodules uvicorn tools/media_pipeline/server.py
           New-Item -ItemType Directory -Force apps/studio-desktop/resources | Out-Null
@@ -95,8 +119,18 @@ jobs:
         run: |
           npm install --prefix apps/desktop
           npm run package --prefix apps/desktop
-      - name: Package Windows Studio
+      - name: Package and verify Windows Studio media tools
         shell: pwsh
         run: |
           npm install --prefix apps/studio-desktop
+          $env:ODIUM_FFMPEG=(Resolve-Path apps/studio-desktop/node_modules/ffmpeg-static/ffmpeg.exe).Path
+          $env:ODIUM_FFPROBE=(Resolve-Path apps/studio-desktop/node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe).Path
+          & dist/odium-media.exe diagnostics
+          if ($LASTEXITCODE -ne 0) { throw "Packaged media worker diagnostics failed: $LASTEXITCODE" }
           npm run package --prefix apps/studio-desktop
+          $packagedProbe='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffprobe.exe'
+          $packagedFfmpeg='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffmpeg.exe'
+          if (-not (Test-Path $packagedProbe)) { throw "Packaged ffprobe missing: $packagedProbe" }
+          if (-not (Test-Path $packagedFfmpeg)) { throw "Packaged ffmpeg missing: $packagedFfmpeg" }
+          & $packagedProbe -version
+          if ($LASTEXITCODE -ne 0) { throw "Packaged ffprobe execution failed: $LASTEXITCODE" }
