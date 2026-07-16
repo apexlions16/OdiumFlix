@@ -126,9 +126,11 @@ jobs:
           $env:ODIUM_FFMPEG=(Resolve-Path apps/studio-desktop/node_modules/ffmpeg-static/ffmpeg.exe).Path
           $env:ODIUM_FFPROBE=(Resolve-Path apps/studio-desktop/node_modules/ffprobe-static/bin/win32/x64/ffprobe.exe).Path
           & dist/odium-media.exe diagnostics
+          if ($LASTEXITCODE -ne 0) { throw "Packaged media worker diagnostics failed: $LASTEXITCODE" }
           npm run package --prefix apps/studio-desktop
           $packagedProbe='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffprobe.exe'
           $packagedFfmpeg='apps/studio-desktop/release/win-unpacked/resources/media-tools/ffmpeg.exe'
           if (-not (Test-Path $packagedProbe)) { throw "Packaged ffprobe missing: $packagedProbe" }
           if (-not (Test-Path $packagedFfmpeg)) { throw "Packaged ffmpeg missing: $packagedFfmpeg" }
           & $packagedProbe -version
+          if ($LASTEXITCODE -ne 0) { throw "Packaged ffprobe execution failed: $LASTEXITCODE" }
