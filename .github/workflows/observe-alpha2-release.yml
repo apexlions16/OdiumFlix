@@ -1,0 +1,23 @@
+name: Observe OdiumFlix alpha.2 Release
+
+on:
+  pull_request:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  observe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch release workflow runs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/release-alpha.yml/runs?event=push&per_page=20" > alpha2-release-runs.json
+          cat alpha2-release-runs.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: alpha2-release-runs-json
+          path: alpha2-release-runs.json
